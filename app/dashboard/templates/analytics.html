@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Career Analytics & Strategy | Control Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --secondary: #a855f7;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem;
+            line-height: 1.5;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-links a, .btn-action {
+            padding: 0.6rem 1.2rem;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-links a:hover, .btn-action:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .nav-links a.active {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: #ffffff;
+        }
+
+        /* KPI Metric Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .metric-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background-color: var(--primary);
+        }
+
+        .metric-card.conv::before { background-color: var(--success); }
+        .metric-card.accuracy::before { background-color: var(--warning); }
+        .metric-card.strategy::before { background-color: var(--secondary); }
+
+        .metric-card h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-val {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* Split layout */
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .layout-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Progress list for Preference Scores */
+        .preference-item {
+            margin-bottom: 1.25rem;
+        }
+
+        .pref-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .pref-bar-bg {
+            background-color: #0f172a;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .pref-bar-fill {
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+
+        /* Company intelligence table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-fav { background-color: rgba(16, 185, 129, 0.15); color: var(--success); }
+        .badge-blocked { background-color: rgba(239, 68, 68, 0.15); color: var(--danger); }
+        .badge-neutral { background-color: rgba(148, 163, 184, 0.15); color: var(--text-muted); }
+
+        .btn-status-toggle {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-status-toggle:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Decision card accordion styling */
+        .decision-card {
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .decision-card:hover {
+            border-color: var(--primary);
+        }
+
+        .decision-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            margin-bottom: 0.5rem;
+        }
+
+        .decision-body {
+            font-size: 0.9rem;
+            border-top: 1px dashed var(--border-color);
+            padding-top: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .bullet-list {
+            margin-left: 1.25rem;
+            margin-top: 0.5rem;
+        }
+
+        .bullet-list li {
+            margin-bottom: 0.25rem;
+            font-size: 0.85rem;
+        }
+
+        .success-banner {
+            display: none;
+            padding: 1rem;
+            background-color: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success);
+            border-radius: 8px;
+            color: var(--success);
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-title">
+            <h1>Strategy & Adaptive Learning</h1>
+            <p>Self-improving recommendation accuracy engine and preference evolutions</p>
+        </div>
+        <div class="nav-links">
+            <a href="/dashboard">Overview</a>
+            <a href="/analytics" class="active">Analytics</a>
+            <a href="/settings">Settings</a>
+        </div>
+    </header>
+
+    <div id="successBanner" class="success-banner">
+        Feedback Learning Analysis cycle executed successfully! Preference weights evolved.
+    </div>
+
+    <!-- Funnel Analytics Row -->
+    <div class="metrics-grid">
+        <div class="metric-card conv">
+            <h3>Interview Conv Rate</h3>
+            <div class="metric-val">{{ (latest_metric.interview_conversion_rate or 0.0) | round(1) }}%</div>
+        </div>
+        <div class="metric-card conv">
+            <h3>Offer Conv Rate</h3>
+            <div class="metric-val">{{ (latest_metric.offer_conversion_rate or 0.0) | round(1) }}%</div>
+        </div>
+        <div class="metric-card accuracy">
+            <h3>Accepted Recommendations</h3>
+            <div class="metric-val">{{ latest_metric.accepted_recommendations or 0 }}</div>
+        </div>
+        <div class="metric-card accuracy">
+            <h3>Ignored Recommendations</h3>
+            <div class="metric-val">{{ latest_metric.ignored_recommendations or 0 }}</div>
+        </div>
+    </div>
+
+    <div style="text-align: right; margin-bottom: 2rem;">
+        <button onclick="triggerLearning()" class="btn-action" style="background-color: var(--primary); color: #ffffff; border-color: var(--primary)">
+            Trigger Preference Learning Now
+        </button>
+    </div>
+
+    <!-- Main split layout panels -->
+    <div class="layout-grid">
+        <!-- Left: Preferences and Trends -->
+        <div class="left-column">
+            <!-- Dynamic Preference Scores -->
+            <div class="panel">
+                <div class="panel-title">Dynamic Preferences & Tech Weights</div>
+                
+                <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin-bottom: 1rem;">Technologies & Skills</h4>
+                {% for tech, score in preferences.technology.items() %}
+                <div class="preference-item">
+                    <div class="pref-header">
+                        <span>{{ tech }}</span>
+                        <span style="font-weight: 600;">{{ (score * 100) | round(0) }}%</span>
+                    </div>
+                    <div class="pref-bar-bg">
+                        <div class="pref-bar-fill" style="width: {{ score * 100 }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin-top: 2rem; margin-bottom: 1rem;">Locations</h4>
+                {% for loc, score in preferences.location.items() %}
+                <div class="preference-item">
+                    <div class="pref-header">
+                        <span>{{ loc }}</span>
+                        <span style="font-weight: 600;">{{ (score * 100) | round(0) }}%</span>
+                    </div>
+                    <div class="pref-bar-bg">
+                        <div class="pref-bar-fill" style="width: {{ score * 100 }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin-top: 2rem; margin-bottom: 1rem;">Work Style Preferences</h4>
+                {% for mode, score in preferences.remote_pref.items() %}
+                <div class="preference-item">
+                    <div class="pref-header">
+                        <span>{{ mode | capitalize }}</span>
+                        <span style="font-weight: 600;">{{ (score * 100) | round(0) }}%</span>
+                    </div>
+                    <div class="pref-bar-bg">
+                        <div class="pref-bar-fill" style="width: {{ score * 100 }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Learning trend logs -->
+            <div class="panel">
+                <div class="panel-title">Self-Improvement Trend Log</div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Accepted</th>
+                                <th>Ignored</th>
+                                <th>Interview %</th>
+                                <th>Offer %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in learning_logs %}
+                            <tr>
+                                <td>{{ log.metric_date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ log.accepted_recommendations }}</td>
+                                <td>{{ log.ignored_recommendations }}</td>
+                                <td style="color: var(--success); font-weight: 600;">{{ log.interview_conversion_rate }}%</td>
+                                <td style="color: var(--warning); font-weight: 600;">{{ log.offer_conversion_rate }}%</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1rem;">
+                                    No self-improvement logs recorded yet.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Company Intelligence & Career strategy details -->
+        <div class="right-column">
+            <!-- Company Intelligence -->
+            <div class="panel">
+                <div class="panel-title">Company Intelligence Service</div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>Funnel stats</th>
+                                <th>Rate</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for comp in companies %}
+                            <tr>
+                                <td style="font-weight: 600;">{{ comp.name }}</td>
+                                <td>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">
+                                        App: {{ comp.applied_count }} &bull; Int: {{ comp.interview_count }} &bull; Off: {{ comp.offer_count }}
+                                    </div>
+                                </td>
+                                <td style="font-weight: 600; color: var(--success);">{{ comp.success_rate }}%</td>
+                                <td>
+                                    <span class="badge {% if comp.status == 'Favorite' %}badge-fav{% elif comp.status == 'Blocked' %}badge-blocked{% else %}badge-neutral{% endif %}">
+                                        {{ comp.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <select onchange="updateCompanyStatus('{{ comp.name }}', this.value)" class="btn-status-toggle">
+                                        <option value="">Toggle</option>
+                                        <option value="Favorite">Favorite</option>
+                                        <option value="Blocked">Block</option>
+                                        <option value="Neutral">Neutral</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                                    No company interaction logs accumulated.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Career Strategy Decision log -->
+            <div class="panel">
+                <div class="panel-title">Career Strategy & Decision Logs</div>
+                <div>
+                    {% for dec in decisions %}
+                    <div class="decision-card">
+                        <div class="decision-header" onclick="toggleAccordion('dec_{{ loop.index }}')">
+                            <div>
+                                <h4 style="font-size: 0.95rem; font-weight: 600;">{{ dec.job_title }}</h4>
+                                <p style="font-size: 0.8rem; color: var(--text-muted);">{{ dec.company }}</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <span class="badge" style="background-color: {% if dec.priority == 'High' %}rgba(168, 85, 247, 0.15){% else %}rgba(148, 163, 184, 0.15){% endif %}; color: {% if dec.priority == 'High' %}var(--secondary){% else %}var(--text-muted){% endif %};">
+                                    {{ dec.priority }} priority
+                                </span>
+                                <div style="font-size: 0.75rem; color: var(--success); font-weight: 600; margin-top: 0.25rem;">
+                                    {{ dec.recommendation }}
+                                </div>
+                            </div>
+                        </div>
+                        <div id="dec_{{ loop.index }}" class="decision-body" style="display: none;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                <div>
+                                    <span style="font-size: 0.8rem; color: var(--text-muted);">Interview Probability:</span>
+                                    <strong style="font-size: 0.85rem; color: var(--success);">{{ dec.estimated_interview_probability }}</strong>
+                                </div>
+                                <div>
+                                    <span style="font-size: 0.8rem; color: var(--text-muted);">Growth Potential:</span>
+                                    <strong style="font-size: 0.85rem;">{{ dec.career_growth }}</strong>
+                                </div>
+                            </div>
+                            <div>
+                                <strong style="font-size: 0.8rem; color: var(--text-muted);">AI Reasoning:</strong>
+                                <ul class="bullet-list">
+                                    {% for r in dec.reasoning %}
+                                    <li>{{ r }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% if dec.missing_skills %}
+                            <div style="margin-top: 0.5rem;">
+                                <strong style="font-size: 0.8rem; color: var(--danger);">Missing Skills:</strong>
+                                <ul class="bullet-list" style="color: #fca5a5;">
+                                    {% for s in dec.missing_skills %}
+                                    <li>{{ s }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                        No career decisions logs evaluated yet.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleAccordion(id) {
+            const el = document.getElementById(id);
+            if (el.style.display === 'none') {
+                el.style.display = 'block';
+            } else {
+                el.style.display = 'none';
+            }
+        }
+
+        async function triggerLearning() {
+            try {
+                const response = await fetch('/api/career/trigger-learning', { method: 'POST' });
+                if (response.ok) {
+                    const banner = document.getElementById('successBanner');
+                    banner.style.display = 'block';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    alert('Failed to trigger learning cycle.');
+                }
+            } catch (e) {
+                alert(`Error: ${e}`);
+            }
+        }
+
+        async function updateCompanyStatus(companyName, newStatus) {
+            if (!newStatus) return;
+            try {
+                // Post feedback event type to update company status
+                const res = await fetch('/api/career/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        event_type: newStatus === "Favorite" ? "Bookmarked" : "Ignored Job",
+                        payload: { company: companyName, status: newStatus }
+                    })
+                });
+                
+                if (res.ok) {
+                    alert(`Company status updated to ${newStatus}.`);
+                    window.location.reload();
+                } else {
+                    alert('Failed to update company status.');
+                }
+            } catch (e) {
+                alert(`Error: ${e}`);
+            }
+        }
+    </script>
+</body>
+</html>

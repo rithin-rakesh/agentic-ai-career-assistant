@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings & Control Center | Agentic Career Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+        }
+
+        .header-title h1 { font-size: 1.75rem; font-weight: 700; }
+
+        .nav-links { display: flex; gap: 1rem; }
+
+        .nav-links a {
+            padding: 0.6rem 1.2rem;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-links a:hover { border-color: var(--primary); color: var(--primary); }
+
+        .settings-container { max-width: 1050px; margin: 0 auto; }
+
+        .panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.25rem; }
+        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.25rem; }
+        .form-row-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+
+        @media (max-width: 768px) {
+            .form-row, .form-row-3, .form-row-4 { grid-template-columns: 1fr; }
+        }
+
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group.full-width { grid-column: 1 / -1; }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            padding-top: 0.5rem;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .form-group textarea {
+            min-height: 200px;
+            font-family: monospace;
+            font-size: 0.875rem;
+            resize: vertical;
+        }
+
+        /* Metric Displays */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            background-color: #0f172a;
+            padding: 1.25rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .status-item { display: flex; flex-direction: column; }
+        .meta-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+        .meta-value { font-size: 0.95rem; font-weight: 600; color: var(--text-main); }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-running, .status-connected, .status-indexed { background-color: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .status-paused, .status-unvalidated, .status-pending { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .status-stopped, .status-disconnected, .status-failed { background-color: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .status-executing { background-color: rgba(99, 102, 241, 0.2); color: #818cf8; }
+
+        /* Buttons & Actions */
+        .btn-group { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
+
+        .btn {
+            padding: 0.65rem 1.25rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary { background-color: var(--primary); color: #ffffff; }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+
+        .btn-secondary { background-color: #334155; color: #f8fafc; }
+        .btn-secondary:hover { background-color: #475569; }
+
+        .btn-success { background-color: var(--success); color: #ffffff; }
+        .btn-success:hover { background-color: #059669; }
+
+        .btn-warning { background-color: var(--warning); color: #0f172a; }
+        .btn-warning:hover { background-color: #d97706; }
+
+        .btn-danger { background-color: var(--danger); color: #ffffff; }
+        .btn-danger:hover { background-color: #dc2626; }
+
+        .upload-box {
+            border: 2px dashed var(--border-color);
+            border-radius: 10px;
+            padding: 1.25rem;
+            text-align: center;
+            background-color: #0f172a;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 1.5rem;
+        }
+        .upload-box:hover { border-color: var(--primary); background-color: rgba(99, 102, 241, 0.05); }
+
+        .success-banner {
+            display: none;
+            padding: 1rem;
+            background-color: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success);
+            border-radius: 8px;
+            color: var(--success);
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+        th, td { padding: 0.6rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { color: var(--text-muted); font-weight: 500; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-title">
+            <h1>Settings & Control Center</h1>
+        </div>
+        <div class="nav-links">
+            <a href="/dashboard">Overview</a>
+            <a href="/analytics">Analytics</a>
+        </div>
+    </header>
+
+    <div class="settings-container">
+        <div id="successBanner" class="success-banner">
+            Configurations saved successfully!
+        </div>
+
+        <!-- 1. SCHEDULER SETTINGS PANEL -->
+        <div class="panel">
+            <div class="panel-title">
+                <span>Scheduler Daemon & Background Control</span>
+                <span id="schedulerStatusBadge" class="status-badge {% if scheduler_status.current_status == 'Running' %}status-running{% elif scheduler_status.current_status == 'Paused' %}status-paused{% elif scheduler_status.current_status == 'Executing' %}status-executing{% else %}status-stopped{% endif %}">
+                    {{ scheduler_status.current_status }}
+                </span>
+            </div>
+
+            <!-- Live Scheduler Status Display Grid -->
+            <div class="status-grid">
+                <div class="status-item">
+                    <span class="meta-label">Current Status</span>
+                    <span class="meta-value" id="schStatusVal">{{ scheduler_status.current_status }}</span>
+                </div>
+                <div class="status-item">
+                    <span class="meta-label">Last Run</span>
+                    <span class="meta-value" id="schLastRunVal">{{ scheduler_status.last_run }}</span>
+                </div>
+                <div class="status-item">
+                    <span class="meta-label">Next Run</span>
+                    <span class="meta-value" id="schNextRunVal">{{ scheduler_status.next_run }}</span>
+                </div>
+                <div class="status-item">
+                    <span class="meta-label">Last Duration</span>
+                    <span class="meta-value" id="schDurationVal">{{ scheduler_status.duration }}</span>
+                </div>
+                <div class="status-item">
+                    <span class="meta-label">Jobs Collected</span>
+                    <span class="meta-value" id="schJobsVal">{{ scheduler_status.jobs_collected }} jobs</span>
+                </div>
+                <div class="status-item">
+                    <span class="meta-label">Current Queue</span>
+                    <span class="meta-value" id="schQueueVal">{{ scheduler_status.current_queue }} tasks</span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="schedulerFrequencySelect">Run Frequency Interval</label>
+                    <select id="schedulerFrequencySelect" name="scheduler_frequency_hours" onchange="updateSchedulerFrequency(this.value)">
+                        <option value="1" {% if scheduler_frequency_hours == 1 %}selected{% endif %}>Run Every 1 Hour</option>
+                        <option value="2" {% if scheduler_frequency_hours == 2 %}selected{% endif %}>Run Every 2 Hours</option>
+                        <option value="4" {% if scheduler_frequency_hours == 4 %}selected{% endif %}>Run Every 4 Hours</option>
+                        <option value="6" {% if scheduler_frequency_hours == 6 %}selected{% endif %}>Run Every 6 Hours</option>
+                        <option value="12" {% if scheduler_frequency_hours == 12 %}selected{% endif %}>Run Every 12 Hours</option>
+                        <option value="24" {% if scheduler_frequency_hours == 24 %}selected{% endif %}>Run Every 24 Hours</option>
+                    </select>
+                </div>
+                <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button type="button" class="btn btn-secondary" style="width: 100%; justify-content: center;" onclick="triggerSchedulerAction('restart')">Restart Scheduler</button>
+                </div>
+            </div>
+
+            <!-- Scheduler Action Buttons -->
+            <div class="btn-group">
+                <button type="button" class="btn btn-success" onclick="triggerSchedulerAction('start')">▶ Start Agent</button>
+                <button type="button" class="btn btn-warning" onclick="triggerSchedulerAction('pause')">⏸ Pause Agent</button>
+                <button type="button" class="btn btn-primary" onclick="triggerSchedulerAction('resume')">⏯ Resume Agent</button>
+                <button type="button" class="btn btn-secondary" onclick="triggerSchedulerAction('run-now')">⚡ Run Now</button>
+            </div>
+        </div>
+
+        <!-- 2. EMAIL SETTINGS PANEL -->
+        <div class="panel">
+            <div class="panel-title">
+                <span>Gmail & SMTP Email Notifications</span>
+                <span id="emailStatusBadge" class="status-badge {% if email_status == 'Connected' %}status-connected{% else %}status-unvalidated{% endif %}">
+                    {{ email_status }}
+                </span>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="smtpHost">SMTP Host</label>
+                    <input type="text" id="smtpHost" name="smtp_host" value="{{ smtp_host }}" placeholder="smtp.gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="smtpPort">SMTP Port</label>
+                    <input type="number" id="smtpPort" name="smtp_port" value="{{ smtp_port }}" placeholder="587 or 465" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="smtpUsername">Gmail Username / Sender Email</label>
+                    <input type="email" id="smtpUsername" name="smtp_username" value="{{ smtp_username }}" placeholder="yourname@gmail.com">
+                </div>
+                <div class="form-group">
+                    <label for="smtpPassword">Gmail App Password</label>
+                    <input type="password" id="smtpPassword" name="smtp_password" value="{{ smtp_password }}" placeholder="16-character app password">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="notificationEmail">Notification Recipient Email</label>
+                <input type="email" id="notificationEmail" name="notification_email" value="{{ notification_email }}" placeholder="candidate@example.com">
+            </div>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary" onclick="validateEmailConfig()">Validate Connection</button>
+                <button type="button" class="btn btn-success" onclick="sendTestEmail()">Send Test Email</button>
+            </div>
+        </div>
+
+        <form id="settingsForm" onsubmit="saveSettings(event)">
+            <!-- 3. JOB PREFERENCES PANEL -->
+            <div class="panel">
+                <div class="panel-title">Job Preferences & Targeting</div>
+                
+                <div class="form-group">
+                    <label for="preferredRoles">Preferred Roles (Comma Separated)</label>
+                    <input type="text" id="preferredRoles" name="preferred_roles" value="{{ preferred_roles | join(', ') }}" placeholder="e.g. AI Engineer, ML Architect, Data Scientist" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="preferredLocations">Preferred Locations (Comma Separated)</label>
+                    <input type="text" id="preferredLocations" name="preferred_locations" value="{{ preferred_locations | join(', ') }}" placeholder="e.g. Remote, Bangalore, San Francisco" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Work Type Modes</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="enableRemote" name="enable_remote" {% if enable_remote %}checked{% endif %}>
+                            <span>Remote</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="enableHybrid" name="enable_hybrid" {% if enable_hybrid %}checked{% endif %}>
+                            <span>Hybrid</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="enableOnsite" name="enable_onsite" {% if enable_onsite %}checked{% endif %}>
+                            <span>Onsite</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label for="minimumSalary">Minimum Salary</label>
+                        <input type="text" id="minimumSalary" name="minimum_salary" value="{{ minimum_salary }}" placeholder="e.g. $80,000 / yr or 15 LPA">
+                    </div>
+                    <div class="form-group">
+                        <label for="maximumSalary">Maximum Salary</label>
+                        <input type="text" id="maximumSalary" name="maximum_salary" value="{{ maximum_salary }}" placeholder="e.g. $200,000 / yr or 40 LPA">
+                    </div>
+                    <div class="form-group">
+                        <label for="experienceLevel">Experience Level</label>
+                        <select id="experienceLevel" name="experience_level">
+                            <option value="Junior" {% if experience_level == 'Junior' %}selected{% endif %}>Junior (0-2 Yrs)</option>
+                            <option value="Mid-Level" {% if experience_level == 'Mid-Level' %}selected{% endif %}>Mid-Level (3-5 Yrs)</option>
+                            <option value="Senior" {% if experience_level == 'Senior' %}selected{% endif %}>Senior (5-8 Yrs)</option>
+                            <option value="Lead" {% if experience_level == 'Lead' %}selected{% endif %}>Lead / Staff (8+ Yrs)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="preferredSkills">Preferred Skills (Comma Separated)</label>
+                    <input type="text" id="preferredSkills" name="preferred_skills" value="{{ preferred_skills | join(', ') }}" placeholder="e.g. Python, PyTorch, LangGraph, Qdrant, Docker">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ignoredCompanies">Ignored Companies (Comma Separated)</label>
+                        <input type="text" id="ignoredCompanies" name="ignored_companies" value="{{ ignored_companies | join(', ') }}" placeholder="SpamCorp, OutsourceFactory">
+                    </div>
+                    <div class="form-group">
+                        <label for="ignoredKeywords">Ignored Keywords (Comma Separated)</label>
+                        <input type="text" id="ignoredKeywords" name="ignored_keywords" value="{{ ignored_keywords | join(', ') }}" placeholder="Crypto, Unpaid, Sales">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. AI SETTINGS PANEL -->
+            <div class="panel">
+                <div class="panel-title">AI Gateway & Model Configuration</div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="geminiApiKey">Gemini API Key</label>
+                        <input type="password" id="geminiApiKey" name="gemini_api_key" value="{{ gemini_api_key }}" placeholder="AIzaSy...">
+                    </div>
+                    <div class="form-group">
+                        <label for="openaiApiKey">OpenAI API Key (Fallback)</label>
+                        <input type="password" id="openaiApiKey" name="openai_api_key" value="{{ openai_api_key }}" placeholder="sk-proj-...">
+                    </div>
+                </div>
+
+                <div class="form-row-4">
+                    <div class="form-group">
+                        <label for="primaryModel">Primary AI Model</label>
+                        <select id="primaryModel" name="primary_model">
+                            <option value="gemini-2.5-flash" {% if primary_model == 'gemini-2.5-flash' %}selected{% endif %}>Gemini 2.5 Flash</option>
+                            <option value="gemini-1.5-pro" {% if primary_model == 'gemini-1.5-pro' %}selected{% endif %}>Gemini 1.5 Pro</option>
+                            <option value="gpt-4o-mini" {% if primary_model == 'gpt-4o-mini' %}selected{% endif %}>GPT-4o Mini</option>
+                            <option value="gpt-4o" {% if primary_model == 'gpt-4o' %}selected{% endif %}>GPT-4o</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="temperature">Temperature (0.0 - 1.0)</label>
+                        <input type="number" step="0.05" min="0" max="1" id="temperature" name="temperature" value="{{ temperature }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="maxTokens">Max Tokens</label>
+                        <input type="number" id="maxTokens" name="max_tokens" value="{{ max_tokens }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="requestTimeout">Timeout (seconds)</label>
+                        <input type="number" id="requestTimeout" name="request_timeout" value="{{ request_timeout }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. CANDIDATE PROFILE PANEL -->
+            <div class="panel">
+                <div class="panel-title">Candidate Personal Profile</div>
+                
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label for="candidateName">Full Name</label>
+                        <input type="text" id="candidateName" name="candidate_name" value="{{ candidate_name }}" placeholder="Jane Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="emailAddress">Email Address</label>
+                        <input type="email" id="emailAddress" name="email_address" value="{{ email_address }}" placeholder="jane@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="text" id="phone" name="phone" value="{{ phone }}" placeholder="+1 (555) 019-2834">
+                    </div>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label for="linkedin">LinkedIn Profile</label>
+                        <input type="url" id="linkedin" name="linkedin" value="{{ linkedin }}" placeholder="https://linkedin.com/in/username">
+                    </div>
+                    <div class="form-group">
+                        <label for="github">GitHub Profile</label>
+                        <input type="url" id="github" name="github" value="{{ github }}" placeholder="https://github.com/username">
+                    </div>
+                    <div class="form-group">
+                        <label for="portfolio">Portfolio / Website</label>
+                        <input type="url" id="portfolio" name="portfolio" value="{{ portfolio }}" placeholder="https://janedoe.dev">
+                    </div>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label for="yearsExp">Years of Experience</label>
+                        <input type="number" step="0.5" id="yearsExp" name="years_of_experience" value="{{ years_of_experience }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="preferredSalary">Preferred Salary</label>
+                        <input type="text" id="preferredSalary" name="preferred_salary" value="{{ preferred_salary }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="noticePeriod">Notice Period</label>
+                        <input type="text" id="noticePeriod" name="notice_period" value="{{ notice_period }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. RESUME KNOWLEDGE BASE PANEL -->
+            <div class="panel">
+                <div class="panel-title">
+                    <span>Resume Knowledge Base & PDF Indexing</span>
+                    <span class="status-badge status-indexed">Active: v{{ resume_status.version }}</span>
+                </div>
+
+                <div class="status-grid">
+                    <div class="status-item">
+                        <span class="meta-label">Current Resume</span>
+                        <span class="meta-value">{{ resume_status.current_resume }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="meta-label">Upload Date</span>
+                        <span class="meta-value">{{ resume_status.upload_date if resume_status.upload_date else 'N/A' }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="meta-label">Version</span>
+                        <span class="meta-value">v{{ resume_status.version }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="meta-label">Embedding Status</span>
+                        <span class="meta-value"><span class="status-badge status-indexed">{{ resume_status.embedding_status }}</span></span>
+                    </div>
+                    <div class="status-item">
+                        <span class="meta-label">Last Indexed</span>
+                        <span class="meta-value">{{ resume_status.last_indexed if resume_status.last_indexed else 'N/A' }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="meta-label">Chunk Count</span>
+                        <span class="meta-value">{{ resume_status.chunk_count }} chunks</span>
+                    </div>
+                </div>
+
+                <div class="upload-box" onclick="document.getElementById('pdfFileInput').click()">
+                    <p style="font-weight: 600; font-size: 1rem;">Upload New PDF / Markdown Resume</p>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Click to upload .pdf file for automated text extraction, chunking, and Qdrant vector indexing.</p>
+                    <input type="file" id="pdfFileInput" accept=".pdf,.md,.txt" style="display: none;" onchange="handlePdfUpload(event)">
+                    <button type="button" class="btn btn-primary" style="margin-top: 0.5rem;">Select PDF File</button>
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="resumeContent">Resume Markdown Content (data/resume.md)</label>
+                    <textarea id="resumeContent" name="resume_content" required>{{ resume_content }}</textarea>
+                </div>
+            </div>
+
+            <div style="text-align: right; margin-bottom: 3rem;">
+                <button type="submit" class="btn btn-primary" style="font-size: 1rem; padding: 0.85rem 2.5rem;">Save All Settings</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        async function fetchSchedulerStatus() {
+            try {
+                const res = await fetch('/api/scheduler/status');
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('schStatusVal').innerText = data.current_status;
+                    document.getElementById('schLastRunVal').innerText = data.last_run;
+                    document.getElementById('schNextRunVal').innerText = data.next_run;
+                    document.getElementById('schDurationVal').innerText = data.duration;
+                    document.getElementById('schJobsVal').innerText = `${data.jobs_collected} jobs`;
+                    document.getElementById('schQueueVal').innerText = `${data.current_queue} tasks`;
+                }
+            } catch (e) {}
+        }
+
+        async function triggerSchedulerAction(action) {
+            try {
+                const res = await fetch(`/api/scheduler/${action}`, { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(data.message);
+                    fetchSchedulerStatus();
+                } else {
+                    alert(`Action failed: ${data.detail || data.message}`);
+                }
+            } catch (e) {
+                alert(`Error: ${e}`);
+            }
+        }
+
+        async function updateSchedulerFrequency(hours) {
+            try {
+                const res = await fetch('/api/scheduler/restart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ interval_hours: parseInt(hours, 10) })
+                });
+                if (res.ok) {
+                    fetchSchedulerStatus();
+                }
+            } catch (e) {}
+        }
+
+        async function validateEmailConfig() {
+            const payload = {
+                smtp_host: document.getElementById('smtpHost').value,
+                smtp_port: parseInt(document.getElementById('smtpPort').value, 10),
+                smtp_username: document.getElementById('smtpUsername').value,
+                smtp_password: document.getElementById('smtpPassword').value
+            };
+            try {
+                const res = await fetch('/api/settings/email/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                const badge = document.getElementById('emailStatusBadge');
+                if (data.status === 'success') {
+                    badge.className = 'status-badge status-connected';
+                    badge.innerText = 'Connected';
+                    alert(`Success: ${data.message}`);
+                } else {
+                    badge.className = 'status-badge status-disconnected';
+                    badge.innerText = 'Disconnected';
+                    alert(`Validation Failed: ${data.message}`);
+                }
+            } catch (e) {
+                alert(`Error validating email: ${e}`);
+            }
+        }
+
+        async function sendTestEmail() {
+            const payload = {
+                smtp_host: document.getElementById('smtpHost').value,
+                smtp_port: parseInt(document.getElementById('smtpPort').value, 10),
+                smtp_username: document.getElementById('smtpUsername').value,
+                smtp_password: document.getElementById('smtpPassword').value,
+                notification_email: document.getElementById('notificationEmail').value
+            };
+            try {
+                const res = await fetch('/api/settings/email/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    alert(`Test Email Sent! ${data.message}`);
+                } else {
+                    alert(`Test Email Failed: ${data.message}`);
+                }
+            } catch (e) {
+                alert(`Error sending test email: ${e}`);
+            }
+        }
+
+        async function handlePdfUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/resume/upload-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message || 'Resume uploaded successfully!');
+                    window.location.reload();
+                } else {
+                    alert(`Upload failed: ${result.detail || 'Error processing file.'}`);
+                }
+            } catch (e) {
+                alert(`Error: ${e}`);
+            }
+        }
+
+        async function saveSettings(event) {
+            event.preventDefault();
+            const form = event.target;
+
+            const splitComma = (val) => val.split(',').map(s => s.trim()).filter(Boolean);
+
+            const payload = {
+                candidate_name: form.candidate_name.value,
+                email_address: form.email_address.value,
+                phone: form.phone.value,
+                linkedin: form.linkedin.value,
+                github: form.github.value,
+                portfolio: form.portfolio.value,
+                years_of_experience: parseFloat(form.years_of_experience.value) || 0,
+                preferred_salary: form.preferred_salary.value,
+                notice_period: form.notice_period.value,
+
+                preferred_roles: splitComma(form.preferred_roles.value),
+                preferred_locations: splitComma(form.preferred_locations.value),
+                enable_remote: form.enable_remote.checked,
+                enable_hybrid: form.enable_hybrid.checked,
+                enable_onsite: form.enable_onsite.checked,
+                minimum_salary: form.minimum_salary.value,
+                maximum_salary: form.maximum_salary.value,
+                experience_level: form.experience_level.value,
+                preferred_skills: splitComma(form.preferred_skills.value),
+                ignored_companies: splitComma(form.ignored_companies.value),
+                ignored_keywords: splitComma(form.ignored_keywords.value),
+
+                gemini_api_key: form.gemini_api_key.value,
+                openai_api_key: form.openai_api_key.value,
+                primary_model: form.primary_model.value,
+                temperature: parseFloat(form.temperature.value),
+                max_tokens: parseInt(form.max_tokens.value, 10),
+                request_timeout: parseInt(form.request_timeout.value, 10),
+
+                smtp_host: document.getElementById('smtpHost').value,
+                smtp_port: parseInt(document.getElementById('smtpPort').value, 10),
+                smtp_username: document.getElementById('smtpUsername').value,
+                smtp_password: document.getElementById('smtpPassword').value,
+                notification_email: document.getElementById('notificationEmail').value,
+
+                scheduler_frequency_hours: parseInt(document.getElementById('schedulerFrequencySelect').value, 10),
+                resume_content: form.resume_content.value
+            };
+
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const banner = document.getElementById('successBanner');
+                    banner.style.display = 'block';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    setTimeout(() => { banner.style.display = 'none'; }, 5000);
+                    fetchSchedulerStatus();
+                } else {
+                    const err = await response.json();
+                    alert(`Save Failed: ${err.detail || 'Internal server error'}`);
+                }
+            } catch (e) {
+                alert(`Error: ${e}`);
+            }
+        }
+
+        setInterval(fetchSchedulerStatus, 15000);
+    </script>
+</body>
+</html>

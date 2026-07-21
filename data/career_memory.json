@@ -1,0 +1,173 @@
+{
+    "applied_jobs": [
+        {
+            "job_url": "https://example.com/unique-url",
+            "company": "Unique Corp",
+            "position": "AI Engineer",
+            "status": "Draft",
+            "resume_path": "D:\\Agentic ai\\job_agent\\data\\test_applications\\Unique_Corp_AI_Engineer_04ce7901\\resume_tailored.pdf",
+            "cover_letter_path": "D:\\Agentic ai\\job_agent\\data\\test_applications\\Unique_Corp_AI_Engineer_04ce7901\\cover_letter.pdf",
+            "applied_at": null,
+            "created_at": "2026-07-19T05:47:27.196058+00:00",
+            "last_updated": "2026-07-19T05:47:27.196067+00:00"
+        },
+        {
+            "job_url": "https://indeed.com/viewjob?jk=indeed111",
+            "company": "Indeed Tech Partners",
+            "position": "Python Developer",
+            "status": "Draft",
+            "resume_path": "data/applications\\Indeed_Tech_Partners_Python_Developer_27cc59b1\\resume_tailored.pdf",
+            "cover_letter_path": "data/applications\\Indeed_Tech_Partners_Python_Developer_27cc59b1\\cover_letter.pdf",
+            "applied_at": null,
+            "created_at": "2026-07-19T05:48:47.259343+00:00",
+            "last_updated": "2026-07-19T05:48:47.259362+00:00"
+        },
+        {
+            "job_url": "https://indeed.com/viewjob?jk=indeed555",
+            "company": "ReactWeb Corp",
+            "position": "Python Developer",
+            "status": "Draft",
+            "resume_path": "data/applications\\ReactWeb_Corp_Python_Developer_acdb2e62\\resume_tailored.pdf",
+            "cover_letter_path": "data/applications\\ReactWeb_Corp_Python_Developer_acdb2e62\\cover_letter.pdf",
+            "applied_at": null,
+            "created_at": "2026-07-19T05:48:47.385244+00:00",
+            "last_updated": "2026-07-19T05:48:47.385253+00:00"
+        },
+        {
+            "job_url": "https://naukri.com/jobs/naukri111",
+            "company": "Naukri AI Solutions",
+            "position": "AI Engineer",
+            "status": "Draft",
+            "resume_path": "data/applications\\Naukri_AI_Solutions_AI_Engineer_f10c317d\\resume_tailored.pdf",
+            "cover_letter_path": "data/applications\\Naukri_AI_Solutions_AI_Engineer_f10c317d\\cover_letter.pdf",
+            "applied_at": null,
+            "created_at": "2026-07-19T05:48:47.524213+00:00",
+            "last_updated": "2026-07-19T05:48:47.524225+00:00"
+        },
+        {
+            "job_url": "https://naukri.com/jobs/naukri333",
+            "company": "GenAI Labs",
+            "position": "Generative AI Engineer",
+            "status": "Draft",
+            "resume_path": "data/applications\\GenAI_Labs_Generative_AI_Engineer_49411d58\\resume_tailored.pdf",
+            "cover_letter_path": "data/applications\\GenAI_Labs_Generative_AI_Engineer_49411d58\\cover_letter.pdf",
+            "applied_at": null,
+            "created_at": "2026-07-19T05:48:47.657378+00:00",
+            "last_updated": "2026-07-19T05:48:47.657393+00:00"
+        },
+        {
+            "job_url": "https://naukri.com/jobs/naukri-dup",
+            "company": "Indeed Tech Partners",
+            "position": "Python Developer",
+            "status": "Draft",
+            "resume_path": "data/applications\\Indeed_Tech_Partners_Python_Developer_7674a7d1\\resume_tailored.pdf",
+            "cover_letter_path": "data/applications\\Indeed_Tech_Partners_Python_Developer_7674a7d1\\cover_letter.pdf",
+            "applied_at": null,
+            "created_at": "2026-07-19T05:48:47.788052+00:00",
+            "last_updated": "2026-07-19T05:48:47.788061+00:00"
+        }
+    ],
+    "rejected_jobs": [],
+    "interview_invitations": [],
+    "favorite_companies": [
+        "Google",
+        "DeepMind",
+        "OpenAI",
+        "Anthropic"
+    ],
+    "ignored_companies": [
+        "SpamCorp"
+    ],
+    "preferred_locations": [
+        "Remote",
+        "San Francisco"
+    ],
+    "preferred_technologies": [
+        "Python",
+        "FastAPI",
+        "LangGraph"
+    ],
+    "previously_generated_resumes": {
+        "https://example.com/unique-url": {
+            "resume_path": "D:\\Agentic ai\\job_agent\\data\\test_applications\\Unique_Corp_AI_Engineer_04ce7901\\resume_tailored.pdf",
+            "cover_letter_path": "D:\\Agentic ai\\job_agent\\data\\test_applications\\Unique_Corp_AI_Engineer_04ce7901\\cover_letter.pdf",
+            "timestamp": "2026-07-19T05:47:27.196071+00:00"
+        },
+        "https://indeed.com/viewjob?jk=indeed111": {
+            "resume_path": "data/applications\\Indeed_Tech_Partners_Python_Developer_27cc59b1\\resume_tailored.pdf",
+            "cover_letter_path": "data/applications\\Indeed_Tech_Partners_Python_Developer_27cc59b1\\cover_letter.pdf",
+            "timestamp": "2026-07-19T05:48:47.259370+00:00"
+        },
+        "https://indeed.com/viewjob?jk=indeed555": {
+            "resume_path": "data/applications\\ReactWeb_Corp_Python_Developer_acdb2e62\\resume_tailored.pdf",
+            "cover_letter_path": "data/applications\\ReactWeb_Corp_Python_Developer_acdb2e62\\cover_letter.pdf",
+            "timestamp": "2026-07-19T05:48:47.385257+00:00"
+        },
+        "https://naukri.com/jobs/naukri111": {
+            "resume_path": "data/applications\\Naukri_AI_Solutions_AI_Engineer_f10c317d\\resume_tailored.pdf",
+            "cover_letter_path": "data/applications\\Naukri_AI_Solutions_AI_Engineer_f10c317d\\cover_letter.pdf",
+            "timestamp": "2026-07-19T05:48:47.524229+00:00"
+        },
+        "https://naukri.com/jobs/naukri333": {
+            "resume_path": "data/applications\\GenAI_Labs_Generative_AI_Engineer_49411d58\\resume_tailored.pdf",
+            "cover_letter_path": "data/applications\\GenAI_Labs_Generative_AI_Engineer_49411d58\\cover_letter.pdf",
+            "timestamp": "2026-07-19T05:48:47.657401+00:00"
+        },
+        "https://naukri.com/jobs/naukri-dup": {
+            "resume_path": "data/applications\\Indeed_Tech_Partners_Python_Developer_7674a7d1\\resume_tailored.pdf",
+            "cover_letter_path": "data/applications\\Indeed_Tech_Partners_Python_Developer_7674a7d1\\cover_letter.pdf",
+            "timestamp": "2026-07-19T05:48:47.788065+00:00"
+        }
+    },
+    "minimum_match_score": 75,
+    "email_address": "jane.doe@example.com",
+    "candidate_profile": {
+        "email": "jane.doe@example.com",
+        "name": "Jane Doe",
+        "phone": "+1 (555) 123-4567",
+        "linkedin": "https://linkedin.com/in/janedoe",
+        "github": "https://github.com/janedoe",
+        "portfolio": "https://janedoe.dev",
+        "years_of_experience": 5.5,
+        "preferred_salary": "$140,000 / yr",
+        "notice_period": "30 Days"
+    },
+    "scheduler_frequency_hours": 4,
+    "job_preferences": {
+        "preferred_roles": [
+            "AI Engineer",
+            "ML Architect"
+        ],
+        "enable_remote": true,
+        "enable_hybrid": true,
+        "enable_onsite": false,
+        "minimum_salary": "$100,000 / yr",
+        "maximum_salary": "$250,000 / yr",
+        "experience_level": "Senior",
+        "preferred_skills": [
+            "Python",
+            "PyTorch",
+            "LangGraph",
+            "Qdrant"
+        ],
+        "ignored_keywords": [
+            "Crypto",
+            "Unpaid"
+        ]
+    },
+    "ai_settings": {
+        "gemini_api_key": "test_gemini_key",
+        "openai_api_key": "test_openai_key",
+        "primary_model": "gemini-2.5-flash",
+        "temperature": 0.3,
+        "max_tokens": 2048,
+        "request_timeout": 45
+    },
+    "email_settings": {
+        "smtp_host": "smtp.gmail.com",
+        "smtp_port": 587,
+        "smtp_username": "test.sender@gmail.com",
+        "smtp_password": "app_password_123",
+        "notification_email": "test.recipient@example.com"
+    }
+}

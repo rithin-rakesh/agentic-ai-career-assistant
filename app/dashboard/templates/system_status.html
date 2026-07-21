@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Status | Agentic Career Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+        }
+
+        .header-title h1 { font-size: 1.75rem; font-weight: 700; }
+
+        .nav-links { display: flex; gap: 1rem; }
+
+        .nav-links a {
+            padding: 0.6rem 1.2rem;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-links a:hover { border-color: var(--primary); color: var(--primary); }
+
+        .status-container { max-width: 1100px; margin: 0 auto; }
+
+        .overall-banner {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .banner-title { font-size: 1.25rem; font-weight: 700; }
+        .banner-time { font-size: 0.875rem; color: var(--text-muted); }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.35rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .badge-healthy { background-color: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; }
+        .badge-degraded { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
+        .badge-unhealthy { background-color: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.75rem;
+        }
+
+        .card-title { font-size: 1.1rem; font-weight: 600; }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label { color: var(--text-muted); }
+        .metric-val { font-weight: 600; color: var(--text-main); }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #0f172a;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.75rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .btn-refresh {
+            padding: 0.75rem 2rem;
+            background-color: var(--primary);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .btn-refresh:hover { background-color: var(--primary-hover); }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-title">
+            <h1>System Health & Architecture Status</h1>
+        </div>
+        <div class="nav-links">
+            <a href="/dashboard">Overview</a>
+            <a href="/settings">Settings</a>
+            <a href="/analytics">Analytics</a>
+        </div>
+    </header>
+
+    <div class="status-container">
+        <!-- Overall System Banner -->
+        <div class="overall-banner">
+            <div>
+                <div class="banner-title">System Status: <span class="status-badge badge-{{ health_data.status }}">{{ health_data.status }}</span></div>
+                <div class="banner-time">Last Checked: {{ health_data.timestamp }} &bull; Health Monitor Service</div>
+            </div>
+            <div>
+                <button class="btn-refresh" onclick="window.location.reload()">Refresh Status</button>
+            </div>
+        </div>
+
+        <!-- System Components Grid -->
+        <div class="status-grid">
+            <!-- 1. FastAPI -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">FastAPI Web Engine</span>
+                    <span class="status-badge badge-healthy">Operational</span>
+                </div>
+                <div class="metric-row"><span class="metric-label">Status</span><span class="metric-val">{{ health_data.details.fastapi.status }}</span></div>
+                <div class="metric-row"><span class="metric-label">Version</span><span class="metric-val">v{{ health_data.details.fastapi.version }}</span></div>
+                <div class="metric-row"><span class="metric-label">Engine</span><span class="metric-val">{{ health_data.details.fastapi.engine }}</span></div>
+            </div>
+
+            <!-- 2. PostgreSQL / SQLite Database -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">PostgreSQL / Database</span>
+                    <span class="status-badge badge-{{ health_data.details.database.status }}">{{ health_data.details.database.status }}</span>
+                </div>
+                <div class="metric-row"><span class="metric-label">Latency</span><span class="metric-val">{{ health_data.details.database.latency_seconds }}s</span></div>
+                <div class="metric-row"><span class="metric-label">Jobs Indexed</span><span class="metric-val">{{ health_data.details.database.jobs_count }}</span></div>
+                <div class="metric-row"><span class="metric-label">Applications Logged</span><span class="metric-val">{{ health_data.details.database.applications_count }}</span></div>
+            </div>
+
+            <!-- 3. Redis -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Redis Task Cache</span>
+                    <span class="status-badge badge-{{ health_data.details.redis.status }}">{{ health_data.details.redis.status }}</span>
+                </div>
+                <div class="metric-row"><span class="metric-label">Connection</span><span class="metric-val">{{ health_data.details.redis.url }}</span></div>
+                <div class="metric-row"><span class="metric-label">Celery Distributed Queue</span><span class="metric-val">{% if health_data.details.redis.celery_enabled %}Enabled{% else %}Standalone{% endif %}</span></div>
+            </div>
+
+            <!-- 4. Qdrant Vector DB -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Qdrant Vector Database</span>
+                    <span class="status-badge badge-{{ health_data.details.qdrant.status }}">{{ health_data.details.qdrant.status }}</span>
+                </div>
+                <div class="metric-row"><span class="metric-label">Latency</span><span class="metric-val">{{ health_data.details.qdrant.latency_seconds }}s</span></div>
+                <div class="metric-row"><span class="metric-label">Collection</span><span class="metric-val">{{ health_data.details.qdrant.collection }}</span></div>
+                <div class="metric-row"><span class="metric-label">Embedding Model</span><span class="metric-val">{{ health_data.details.qdrant.embedding_model }}</span></div>
+            </div>
+
+            <!-- 5. Gemini AI Gateway -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Gemini AI Gateway</span>
+                    <span class="status-badge badge-{{ health_data.details.gemini_ai.status }}">{{ health_data.details.gemini_ai.status }}</span>
+                </div>
+                <div class="metric-row"><span class="metric-label">Primary Model</span><span class="metric-val">{{ health_data.details.gemini_ai.primary_model }}</span></div>
+                <div class="metric-row"><span class="metric-label">Execution Mode</span><span class="metric-val">{{ health_data.details.gemini_ai.mode }}</span></div>
+                <div class="metric-row"><span class="metric-label">Temperature</span><span class="metric-val">{{ health_data.details.gemini_ai.temperature }}</span></div>
+            </div>
+
+            <!-- 6. Workers & Scheduler -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Workers & Background Loop</span>
+                    <span class="status-badge badge-{{ health_data.details.scheduler.status }}">{{ health_data.details.scheduler.state }}</span>
+                </div>
+                <div class="metric-row"><span class="metric-label">Sync Interval</span><span class="metric-label">Every {{ health_data.details.scheduler.interval_hours }} hour(s)</span></div>
+                <div class="metric-row"><span class="metric-label">Last Run</span><span class="metric-val">{{ health_data.details.scheduler.last_run }}</span></div>
+                <div class="metric-row"><span class="metric-label">Next Scheduled Run</span><span class="metric-val">{{ health_data.details.scheduler.next_run }}</span></div>
+            </div>
+
+            <!-- 7. Host Disk Usage -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Disk Storage</span>
+                    <span class="status-badge badge-{{ health_data.details.disk.status }}">{{ health_data.details.disk.used_percent }}% Used</span>
+                </div>
+                <div class="metric-row"><span class="metric-label">Total Space</span><span class="metric-val">{{ health_data.details.disk.total_gb }} GB</span></div>
+                <div class="metric-row"><span class="metric-label">Free Space</span><span class="metric-val">{{ health_data.details.disk.free_gb }} GB</span></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ health_data.details.disk.used_percent }}%;"></div>
+                </div>
+            </div>
+
+            <!-- 8. Memory (RAM) & Queue -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">RAM & Pending Queue</span>
+                    <span class="status-badge badge-healthy">{{ health_data.details.memory.used_percent }}% Memory</span>
+                </div>
+                <div class="metric-row"><span class="metric-label">Available Memory</span><span class="metric-val">{{ health_data.details.memory.available_gb if health_data.details.memory.available_gb else 'Operational' }}</span></div>
+                <div class="metric-row"><span class="metric-label">Pending Queue</span><span class="metric-val">{{ health_data.details.queue.current_queue }} task(s)</span></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ health_data.details.memory.used_percent }}%; background-color: #10b981;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

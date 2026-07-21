@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ job.title }} | Job Inspector</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+        }
+
+        .header-title h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-links a {
+            padding: 0.6rem 1.2rem;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Detail Layout structure */
+        .detail-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .detail-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .meta-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .meta-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .meta-val {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        /* AI evaluation details cards */
+        .score-pill {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--success);
+            padding: 0.25rem 0.75rem;
+            border-radius: 8px;
+            background-color: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success);
+        }
+
+        .bullet-list {
+            margin-left: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .bullet-list li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Human Action Buttons */
+        .actions-panel {
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .actions-btn-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-action {
+            padding: 0.6rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-approve { background-color: var(--success); color: #ffffff; }
+        .btn-approve:hover { background-color: #059669; }
+        
+        .btn-reject { background-color: var(--danger); color: #ffffff; }
+        .btn-reject:hover { background-color: #dc2626; }
+        
+        .btn-ignore { background-color: #4b5563; color: #ffffff; }
+        .btn-ignore:hover { background-color: #374151; }
+
+        .btn-regenerate { background-color: var(--warning); color: #ffffff; }
+        .btn-regenerate:hover { background-color: #d97706; }
+
+        /* Preview preformatted text blocks */
+        .preview-box {
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            color: #e2e8f0;
+            margin-bottom: 1.5rem;
+        }
+
+        .description-text {
+            white-space: pre-wrap;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-title">
+            <h1>Job Inspector</h1>
+        </div>
+        <div class="nav-links">
+            <a href="/dashboard">Overview</a>
+            <a href="/analytics">Analytics</a>
+            <a href="/settings">Settings</a>
+        </div>
+    </header>
+
+    <!-- Top Summary Meta Banner -->
+    <div class="panel" style="margin-bottom: 1.5rem; padding: 1.5rem 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h2 style="font-size: 1.5rem; font-weight: 700;">{{ job.title }}</h2>
+                <p style="color: var(--text-muted); font-size: 1rem;">{{ job.company }} &bull; {{ job.location }}</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <div style="text-align: right;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Match Score</div>
+                    <div class="score-pill">{{ job.match_score }}%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Human Action Control Panel -->
+    {% if app %}
+    <div class="actions-panel">
+        <div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 0.25rem;">
+                Application Prep Status
+            </div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: {% if app.status == 'Pending Approval' %}var(--warning){% else %}var(--success){% endif %};">
+                {{ app.status | upper }}
+            </div>
+        </div>
+        
+        <div class="actions-btn-group">
+            {% if app.status == 'Pending Approval' %}
+            <button onclick="submitApproval('Approved')" class="btn-action btn-approve">Approve & Generate</button>
+            <button onclick="submitApproval('Rejected')" class="btn-action btn-reject">Reject</button>
+            <button onclick="submitApproval('Ignored')" class="btn-action btn-ignore">Ignore</button>
+            {% else %}
+            <button onclick="submitApproval('Regenerate')" class="btn-action btn-regenerate">Regenerate Packages</button>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Detail Grids -->
+    <div class="detail-layout">
+        <!-- Left: AI Match summary & Job description -->
+        <div class="left-col">
+            <!-- AI Evaluation Panel -->
+            <div class="panel">
+                <div class="panel-title">AI Suitability Analysis</div>
+                
+                <div class="meta-group">
+                    <div class="meta-label">Match Recommendation Summary</div>
+                    <div style="margin-top: 0.25rem; font-size: 0.95rem;">{{ job.summary }}</div>
+                </div>
+                
+                <div class="meta-group">
+                    <div class="meta-label">Matching Strengths</div>
+                    <ul class="bullet-list" style="color: #a7f3d0; margin-top: 0.25rem;">
+                        {% for str_val in strengths %}
+                        <li>{{ str_val }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <div class="meta-group">
+                    <div class="meta-label">Missing Skills & Gaps</div>
+                    <ul class="bullet-list" style="color: #fca5a5; margin-top: 0.25rem;">
+                        {% for skill in missing_skills %}
+                        <li>{{ skill }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="meta-group">
+                        <div class="meta-label">Learning Effort</div>
+                        <div class="meta-val" style="color: {% if job.learning_effort == 'Low' %}var(--success){% elif job.learning_effort == 'Medium' %}var(--warning){% else %}var(--danger){% endif %}">
+                            {{ job.learning_effort }}
+                        </div>
+                    </div>
+                    <div class="meta-group">
+                        <div class="meta-label">AI Confidence</div>
+                        <div class="meta-val">{{ (job.confidence * 100) | round(1) }}%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Description -->
+            <div class="panel">
+                <div class="panel-title">Full Job Description</div>
+                <div class="description-text">{{ job.description }}</div>
+            </div>
+        </div>
+
+        <!-- Right: Tailored resumes & cover letters previews -->
+        <div class="right-col">
+            <div class="panel">
+                <div class="panel-title">Tailored Application Package Preview</div>
+                
+                {% if app and app.status != 'Pending Approval' %}
+                    <div class="meta-group">
+                        <div class="meta-label" style="margin-bottom: 0.5rem;">Tailored Resume File</div>
+                        <div class="preview-box">{{ resume_preview or "No resume file compiled yet." }}</div>
+                    </div>
+                    
+                    <div class="meta-group">
+                        <div class="meta-label" style="margin-bottom: 0.5rem;">Customized Cover Letter</div>
+                        <div class="preview-box">{{ cover_letter_preview or "No cover letter file compiled yet." }}</div>
+                    </div>
+                {% else %}
+                    <div style="text-align: center; padding: 4rem 1rem; color: var(--text-muted);">
+                        <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin: 0 auto 1rem; opacity: 0.5;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                        <p>Application document previews will appear here once approved and generated.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Script triggers approval actions -->
+    <script>
+        async function submitApproval(action) {
+            if (!confirm(`Are you sure you want to run '${action}' for this application?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/applications/{{ app.id if app else 0 }}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: action })
+                });
+                
+                if (response.ok) {
+                    alert('Action executed successfully.');
+                    window.location.reload();
+                } else {
+                    const err = await response.json();
+                    alert(`Failed: ${err.detail || 'Internal server error'}`);
+                }
+            } catch (e) {
+                alert(`Error: ${e}`);
+            }
+        }
+    </script>
+</body>
+</html>

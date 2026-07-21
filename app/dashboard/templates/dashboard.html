@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Dashboard | Agentic Career Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --secondary: #a855f7;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem;
+            line-height: 1.5;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-links a, .btn-action {
+            padding: 0.6rem 1.2rem;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-links a:hover, .btn-action:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .nav-links a.active {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: #ffffff;
+        }
+
+        /* KPI Metric Cards Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .metric-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background-color: var(--primary);
+        }
+
+        .metric-card.hp::before { background-color: var(--secondary); }
+        .metric-card.score::before { background-color: var(--success); }
+        .metric-card.apps::before { background-color: var(--warning); }
+
+        .metric-card h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-val {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* Main Contents Dashboard Sections */
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 960px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .dashboard-section {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.75rem;
+        }
+
+        .section-header h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        /* Lists and Tables Style rules */
+        .scannable-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .list-item {
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: border-color 0.2s ease;
+        }
+
+        .list-item:hover {
+            border-color: var(--primary);
+        }
+
+        .item-details h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .item-details p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .item-badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-high { background-color: rgba(168, 85, 247, 0.15); color: var(--secondary); }
+        .badge-medium { background-color: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .badge-low { background-color: rgba(148, 163, 184, 0.15); color: var(--text-muted); }
+        .badge-draft { background-color: rgba(99, 102, 241, 0.15); color: var(--primary); }
+        .badge-pending { background-color: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .badge-approved { background-color: rgba(16, 185, 129, 0.15); color: var(--success); }
+
+        .btn-view {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            border-radius: 6px;
+            text-decoration: none;
+            background-color: transparent;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-view:hover {
+            background-color: var(--primary);
+            color: #ffffff;
+        }
+
+        /* Observability Logs Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .status-success { color: var(--success); font-weight: 600; }
+        .status-failure { color: var(--danger); font-weight: 600; }
+
+        /* Scheduler Widget Panel */
+        .scheduler-panel {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .scheduler-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--danger);
+        }
+
+        .status-indicator.active {
+            background-color: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        .scheduler-info h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .scheduler-info p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-title">
+            <h1>Agentic Assistant Control</h1>
+            <p>Managing the autonomous AI Job Search and Prep pipeline</p>
+        </div>
+        <div class="nav-links">
+            <a href="/dashboard" class="active">Overview</a>
+            <a href="/analytics">Analytics</a>
+            <a href="/settings">Settings</a>
+            <a href="/logout" style="border-color: var(--danger); color: var(--danger)">Sign Out</a>
+        </div>
+    </header>
+
+    <!-- KPIMetrics Section -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <h3>Collected Today</h3>
+            <div class="metric-val">{{ metrics.jobs_today }}</div>
+        </div>
+        <div class="metric-card hp">
+            <h3>High Priority</h3>
+            <div class="metric-val">{{ metrics.high_priority_count }}</div>
+        </div>
+        <div class="metric-card score">
+            <h3>Avg Match Score</h3>
+            <div class="metric-val">{{ metrics.average_match_score }}%</div>
+        </div>
+        <div class="metric-card apps">
+            <h3>Applications Built</h3>
+            <div class="metric-val">{{ metrics.applications_count }}</div>
+        </div>
+    </div>
+
+    <!-- Main Content Area split -->
+    <div class="dashboard-layout">
+        <!-- Left Column: Jobs and Observability -->
+        <div class="left-column">
+            <!-- Jobs List -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>Recent Job Opportunities</h2>
+                    <p style="color: var(--text-muted); font-size: 0.85rem">Evaluated by semantic matching agent</p>
+                </div>
+                <div class="scannable-list">
+                    {% for job in jobs %}
+                    <div class="list-item">
+                        <div class="item-details">
+                            <h4>{{ job.title }}</h4>
+                            <p>{{ job.company }} &bull; {{ job.location }}</p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span class="item-badge {% if job.priority == 'High' %}badge-high{% elif job.priority == 'Medium' %}badge-medium{% else %}badge-low{% endif %}">
+                                {{ job.priority }} ({{ job.match_score }}%)
+                            </span>
+                            <a href="/jobs/{{ job.id }}" class="btn-view">Inspect</a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                        No jobs collected yet. Run collections to get matching suggestions.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Observability Node Execution Logs -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>Agent Execution History</h2>
+                    <p style="color: var(--text-muted); font-size: 0.85rem">Observability on workflow node processing times</p>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Step (Node Name)</th>
+                                <th>Latency</th>
+                                <th>Status</th>
+                                <th>Executed At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for run in executions %}
+                            <tr>
+                                <td style="font-family: monospace;">{{ run.node_name }}</td>
+                                <td>{{ run.duration | round(3) }}s</td>
+                                <td>
+                                    <span class="{% if run.status == 'success' %}status-success{% else %}status-failure{% endif %}">
+                                        {{ run.status | upper }}
+                                    </span>
+                                    {% if run.error_message %}
+                                    <div style="font-size: 0.75rem; color: var(--danger); margin-top: 0.25rem;">
+                                        {{ run.error_message }}
+                                    </div>
+                                    {% endif %}
+                                </td>
+                                <td>{{ run.created_at.strftime('%m-%d %H:%M:%S') }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1rem;">
+                                    No agent run history logged yet.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Scheduler status & Application approvals -->
+        <div class="right-column">
+            <!-- Scheduler status Panel -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>Scheduler Daemon</h2>
+                </div>
+                <div class="scheduler-panel">
+                    <div class="scheduler-info">
+                        <h4>Background Scraper</h4>
+                        <p>{% if scheduler.active %}Next run: {{ scheduler.next_run_time }}{% else %}Inactive daemon{% endif %}</p>
+                    </div>
+                    <div class="scheduler-status">
+                        <span class="status-indicator {% if scheduler.active %}active{% endif %}"></span>
+                        <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted)">
+                            {% if scheduler.active %}RUNNING{% else %}STOPPED{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Applications Approval queue -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>Approvals Queue</h2>
+                    <p style="color: var(--text-muted); font-size: 0.8rem">Requires human approval to compile packages</p>
+                </div>
+                <div class="scannable-list">
+                    {% for app in applications %}
+                    <div class="list-item" style="padding: 0.75rem 1rem;">
+                        <div class="item-details">
+                            <h4 style="font-size: 0.9rem;">{{ app.position }}</h4>
+                            <p style="font-size: 0.8rem;">{{ app.company }}</p>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;">
+                            <span class="item-badge {% if app.status == 'Pending Approval' %}badge-pending{% elif app.status == 'Draft' %}badge-draft{% else %}badge-approved{% endif %}" style="font-size: 0.7rem;">
+                                {{ app.status }}
+                            </span>
+                            <a href="/jobs/{{ app.job_id }}" class="btn-view" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Review</a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div style="text-align: center; color: var(--text-muted); padding: 1.5rem; font-size: 0.85rem;">
+                        No pending application approvals required.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

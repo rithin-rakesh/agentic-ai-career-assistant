@@ -1,0 +1,26 @@
+{
+    "already_have": [
+        "Python",
+        "FastAPI",
+        "SQLAlchemy",
+        "SQLite",
+        "Git",
+        "Machine Learning"
+    ],
+    "can_learn_quickly": [
+        {
+            "skill": "RAG & Vector Embeddings",
+            "course": "Vector Spaces and Semantic Retrieval Crash Course",
+            "certification": "None",
+            "estimated_hours": 8
+        }
+    ],
+    "long_term_learning": [
+        {
+            "skill": "Fine-Tuning LLMs & HuggingFace Models",
+            "course": "Deep Learning Specialization - Coursera",
+            "certification": "AWS Certified Machine Learning - Specialty",
+            "estimated_hours": 80
+        }
+    ]
+}
