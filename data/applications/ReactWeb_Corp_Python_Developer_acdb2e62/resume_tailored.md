@@ -1,4 +1,6 @@
-# John Doe
+# Alex Candidate
+
+Email: alex@example.com | Phone: +1-555-0199 | Location: Remote
 
 ## Professional Summary
 Dynamic Junior Developer specializing in **Python Developer** frameworks. Experienced in Python scripting, SQLite database repositories, and deploying microservices to match product expectations at **ReactWeb Corp**.

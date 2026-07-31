@@ -60,15 +60,55 @@
     {
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
       "id": 4,
-      "title": "Jobs Collected & High Priority Matches",
+      "title": "Autonomous Pipeline Runs",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "editorMode": "code",
+          "expr": "sum(pipeline_runs_total) by (status)",
+          "legendFormat": "Pipeline ({{status}})",
+          "range": true,
+          "refId": "D"
+        }
+      ]
+    },
+    {
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "id": 5,
+      "title": "Live Job Intelligence Filtering & Ranking",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "editorMode": "code",
+          "expr": "sum(jobs_filtered_total) by (reason)",
+          "legendFormat": "Filtered ({{reason}})",
+          "range": true,
+          "refId": "E1"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "editorMode": "code",
+          "expr": "sum(jobs_ranked_total) by (priority)",
+          "legendFormat": "Ranked ({{priority}})",
+          "range": true,
+          "refId": "E2"
+        }
+      ]
+    },
+    {
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "id": 6,
+      "title": "Production Email Delivery Engine",
       "type": "stat",
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "Prometheus" },
           "editorMode": "code",
-          "expr": "job_agent_jobs_collected_total",
-          "legendFormat": "Total Jobs Collected",
-          "refId": "D"
+          "expr": "sum(emails_sent_total) by (mode)",
+          "legendFormat": "Emails Sent ({{mode}})",
+          "refId": "F"
         }
       ]
     }

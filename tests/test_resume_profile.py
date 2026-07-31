@@ -42,6 +42,40 @@ def test_upload_resume_text(auth_client):
     assert data["status"] in ("success", "cached")
     assert data["chunk_count"] > 0
 
+def test_upload_empty_file_returns_json_error(auth_client):
+    files = {"file": ("empty.pdf", io.BytesIO(b""), "application/pdf")}
+    response = auth_client.post("/api/resume/upload", files=files)
+    assert response.status_code == 400
+    data = response.json()
+    assert "detail" in data or "message" in data
+    assert "empty" in str(data).lower()
+
+def test_upload_corrupted_pdf_returns_json_error(auth_client):
+    corrupted_bytes = b"\x00\x11\x22\x33\x44\x55\x66\x77\x88\x99\xaa\xbb\xcc\xdd\xee\xff"
+    files = {"file": ("corrupted.pdf", io.BytesIO(corrupted_bytes), "application/pdf")}
+    response = auth_client.post("/api/resume/upload", files=files)
+    assert response.status_code in (400, 500)
+    # Must be valid JSON payload
+    data = response.json()
+    assert isinstance(data, dict)
+    assert "detail" in data or "message" in data
+
+def test_upload_unsupported_file_type_returns_json_error(auth_client):
+    files = {"file": ("script.exe", io.BytesIO(b"binary data"), "application/x-msdownload")}
+    response = auth_client.post("/api/resume/upload", files=files)
+    assert response.status_code == 400
+    data = response.json()
+    assert "Unsupported" in str(data) or "detail" in data
+
+def test_upload_valid_markdown_file_returns_json(auth_client):
+    md_content = b"# John Doe\n\nPython Developer with 5 years experience in FastAPI and LLMs."
+    files = {"file": ("resume.md", io.BytesIO(md_content), "text/markdown")}
+    response = auth_client.post("/api/resume/upload", files=files)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] in ("success", "cached")
+    assert data["chunk_count"] > 0
+
 def test_candidate_profile_update_and_get(auth_client):
     payload = {
         "candidate_name": "Jane Doe",

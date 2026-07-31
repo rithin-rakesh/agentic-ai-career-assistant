@@ -11,13 +11,14 @@ from app.logger import logger
 # OAuth2 scheme for Swagger UI auth testing
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
-# JWT Secret config. Single-user mode.
-JWT_SECRET = os.getenv("JWT_SECRET", "agentic-ai-job-search-secret-2026")
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 120
 
 # Default Single-User credentials
-DEFAULT_USERNAME = os.getenv("DASHBOARD_USERNAME", "admin")
+DEFAULT_USERNAME = settings.DASHBOARD_USERNAME
+
+def get_jwt_secret() -> str:
+    return settings.JWT_SECRET or os.getenv("JWT_SECRET", "agentic-ai-job-search-secret-2026")
 
 def hash_password(password: str) -> str:
     pw_bytes = password.encode("utf-8")
@@ -25,37 +26,61 @@ def hash_password(password: str) -> str:
     return bcrypt.hashpw(pw_bytes, salt).decode("utf-8")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    # Single-user fallback: accept 'admin', 'password', or configured DASHBOARD_PASSWORD
-    allowed_passwords = {"admin", "password", os.getenv("DASHBOARD_PASSWORD", "admin")}
-    if plain_password in allowed_passwords:
+    clean_pw = plain_password.strip() if plain_password else ""
+    if not clean_pw:
+        return False
+
+    # In production mode, strictly verify via bcrypt and configured password only
+    if settings.ENVIRONMENT.lower() == "production":
+        custom_password = settings.DASHBOARD_PASSWORD or os.getenv("DASHBOARD_PASSWORD")
+        if custom_password and clean_pw == custom_password:
+            return True
+        try:
+            return bcrypt.checkpw(clean_pw.encode("utf-8"), hashed_password.encode("utf-8"))
+        except Exception:
+            return False
+
+    # Development fallback
+    allowed_passwords = {"admin", "admin123", "password", settings.DASHBOARD_PASSWORD or "admin"}
+    if clean_pw in allowed_passwords:
         return True
         
-    pw_bytes = plain_password.encode("utf-8")
-    hashed_bytes = hashed_password.encode("utf-8")
     try:
-        return bcrypt.checkpw(pw_bytes, hashed_bytes)
+        return bcrypt.checkpw(clean_pw.encode("utf-8"), hashed_password.encode("utf-8"))
     except Exception:
         return False
 
-DEFAULT_PASSWORD_HASH = hash_password(os.getenv("DASHBOARD_PASSWORD", "admin"))
+DEFAULT_PASSWORD_HASH = hash_password(settings.DASHBOARD_PASSWORD or os.getenv("DASHBOARD_PASSWORD", "admin"))
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
+    now = datetime.now(timezone.utc)
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = now + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
+        expire = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        
+    to_encode.update({
+        "iat": now,
+        "nbf": now,
+        "exp": expire,
+        "iss": "agentic-career-assistant"
+    })
+    encoded_jwt = jwt.encode(to_encode, get_jwt_secret(), algorithm=JWT_ALGORITHM)
     return encoded_jwt
 
 def verify_access_token(token: str) -> Optional[str]:
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(
+            token, 
+            get_jwt_secret(), 
+            algorithms=[JWT_ALGORITHM],
+            options={"verify_exp": True}
+        )
         username: str = payload.get("sub")
         if username:
             return username
-    except jwt.PyJWTError:
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, jwt.PyJWTError):
         pass
     return None
 
@@ -81,7 +106,7 @@ def get_current_user(request: Request, header_token: Optional[str] = Depends(oau
         )
         
     username = verify_access_token(token)
-    if not username or username != DEFAULT_USERNAME:
+    if not username or username != settings.DASHBOARD_USERNAME:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials or session expired.",

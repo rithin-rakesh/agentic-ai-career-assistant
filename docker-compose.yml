@@ -8,14 +8,33 @@ services:
     container_name: job_agent_app
     restart: always
     environment:
-      - DATABASE_URL=postgresql://jobuser:jobpassword@postgres:5432/jobdb
-      - VECTOR_DB_URL=http://qdrant:6333
-      - REDIS_URL=redis://redis:6379/0
-      - MOCK_COLLECTOR=True
-      - MOCK_LLM=True
-      - USE_CELERY=True
-      - LOG_LEVEL=INFO
-      - LOG_FORMAT=json
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://jobuser:jobpassword@postgres:5432/jobdb}
+      - VECTOR_DB_URL=${VECTOR_DB_URL:-http://qdrant:6333}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - EMAIL_MODE=${EMAIL_MODE:-SMTP}
+      - MOCK_COLLECTOR=${MOCK_COLLECTOR:-False}
+      - MOCK_LLM=${MOCK_LLM:-False}
+      - USE_CELERY=${USE_CELERY:-True}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
+      - SECRET_KEY=${SECRET_KEY:-dev_secret_key_change_in_production_32bytes_min}
+      - JWT_SECRET=${JWT_SECRET:-agentic-ai-job-search-secret-2026}
+      - SESSION_SECRET=${SESSION_SECRET:-dev_session_secret_key_32bytes_min}
+      - COOKIE_SECURE=${COOKIE_SECURE:-False}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-["http://localhost:8000","http://localhost","http://127.0.0.1:8000","http://127.0.0.1"]}
+      - DASHBOARD_USERNAME=${DASHBOARD_USERNAME:-admin}
+      - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USERNAME=${SMTP_USERNAME:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - NOTIFICATION_EMAIL=${NOTIFICATION_EMAIL:-}
+      - SCHEDULER_INTERVAL_MINUTES=${SCHEDULER_INTERVAL_MINUTES:-60}
+      - AUTO_APPROVE_THRESHOLD=${AUTO_APPROVE_THRESHOLD:-80.0}
     ports:
       - "8000:8000"
     volumes:
@@ -26,7 +45,7 @@ services:
       redis:
         condition: service_healthy
       qdrant:
-        condition: service_started
+        condition: service_healthy
 
   worker:
     build:
@@ -35,14 +54,32 @@ services:
     container_name: job_agent_worker
     restart: always
     command: celery -A app.workers.celery_app worker --loglevel=info
+    healthcheck:
+      disable: true
     environment:
-      - DATABASE_URL=postgresql://jobuser:jobpassword@postgres:5432/jobdb
-      - VECTOR_DB_URL=http://qdrant:6333
-      - REDIS_URL=redis://redis:6379/0
-      - MOCK_COLLECTOR=True
-      - MOCK_LLM=True
-      - LOG_LEVEL=INFO
-      - LOG_FORMAT=json
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://jobuser:jobpassword@postgres:5432/jobdb}
+      - VECTOR_DB_URL=${VECTOR_DB_URL:-http://qdrant:6333}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - EMAIL_MODE=${EMAIL_MODE:-SMTP}
+      - MOCK_COLLECTOR=${MOCK_COLLECTOR:-False}
+      - MOCK_LLM=${MOCK_LLM:-False}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
+      - SECRET_KEY=${SECRET_KEY:-dev_secret_key_change_in_production_32bytes_min}
+      - JWT_SECRET=${JWT_SECRET:-agentic-ai-job-search-secret-2026}
+      - SESSION_SECRET=${SESSION_SECRET:-dev_session_secret_key_32bytes_min}
+      - COOKIE_SECURE=${COOKIE_SECURE:-False}
+      - DASHBOARD_USERNAME=${DASHBOARD_USERNAME:-admin}
+      - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USERNAME=${SMTP_USERNAME:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - NOTIFICATION_EMAIL=${NOTIFICATION_EMAIL:-}
     volumes:
       - ./data:/app/data
     depends_on:
@@ -50,21 +87,23 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      qdrant:
+        condition: service_healthy
 
   postgres:
     image: postgres:15-alpine
     container_name: job_agent_postgres
     restart: always
     environment:
-      POSTGRES_USER: jobuser
-      POSTGRES_PASSWORD: jobpassword
-      POSTGRES_DB: jobdb
+      POSTGRES_USER: ${POSTGRES_USER:-jobuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jobpassword}
+      POSTGRES_DB: ${POSTGRES_DB:-jobdb}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U jobuser -d jobdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jobuser} -d ${POSTGRES_DB:-jobdb}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -90,6 +129,11 @@ services:
       - "6334:6334"
     volumes:
       - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "/bin/sh -c 'cat /proc/net/tcp | grep -q 18BD' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   nginx:
     image: nginx:alpine
@@ -119,7 +163,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro

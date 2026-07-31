@@ -1,15 +1,15 @@
-from typing import Dict, Any
-from app.ai.llm_client import OpenAIClient
+from typing import Dict, Any, Optional
+from app.ai.llm_client import BaseLLM, MockLLM, get_llm_client
 from app.logger import logger
 
 class CoverLetterAgent:
     """
-    Generates tailored, professional one-page cover letters matching
-    candidate profile details with target job requirements.
+    Generates tailored, professional cover letters matching
+    candidate profile details with target job requirements via Gemini / BaseLLM.
     Strictly forbids experience fabrication or title embellishment.
     """
-    def __init__(self, llm_client: OpenAIClient = None):
-        self.llm_client = llm_client or OpenAIClient()
+    def __init__(self, llm_client: Optional[BaseLLM] = None):
+        self.llm_client = llm_client or get_llm_client()
 
     def generate_cover_letter(self, resume_context: str, job_dict: Dict[str, Any]) -> str:
         """
@@ -21,7 +21,7 @@ class CoverLetterAgent:
 
         logger.info(f"CoverLetterAgent: Drafting cover letter for '{title}' at '{company}'...")
 
-        if self.llm_client.mock_mode:
+        if isinstance(self.llm_client, MockLLM) or getattr(self.llm_client, "mock_fallback", None) is not None:
             logger.info("CoverLetterAgent: Simulating cover letter locally (Mock).")
             return self._get_mock_cover_letter(title, company)
 

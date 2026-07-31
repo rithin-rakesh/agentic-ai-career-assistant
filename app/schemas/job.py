@@ -15,6 +15,17 @@ class JobBase(BaseModel):
     source: str = Field(..., min_length=1, description="Source of the job listing (e.g. Wellfound)")
     date_posted: datetime = Field(..., description="Timestamp of when the job was posted")
 
+    # Phase 2.4 Normalization Fields
+    remote_type: Optional[str] = Field(None, description="Remote work classification: Remote, Hybrid, or Onsite")
+    employment_type: Optional[str] = Field(None, description="Employment type: Full-time, Part-time, Contract, etc.")
+    salary_range: Optional[str] = Field(None, description="Salary or compensation details")
+    experience_level: Optional[str] = Field(None, description="Required experience level")
+    apply_url: Optional[str] = Field(None, description="Direct URL to apply for the position")
+    company_url: Optional[str] = Field(None, description="URL of the hiring company website")
+    collected_timestamp: Optional[datetime] = Field(None, description="Timestamp of when the listing was scraped")
+    content_hash: Optional[str] = Field(None, description="SHA-256 hash of job content for deduplication")
+    raw_metadata: Optional[str] = Field(None, description="Raw source JSON string")
+
     @field_validator("job_url")
     @classmethod
     def validate_url(cls, v: str) -> str:
@@ -105,6 +116,7 @@ class CandidateProfile(BaseModel):
     linkedin: Optional[str] = None
     github: Optional[str] = None
     portfolio: Optional[str] = None
+    current_location: Optional[str] = None
     years_of_experience: Optional[float] = 0.0
     preferred_salary: Optional[str] = None
     notice_period: Optional[str] = None

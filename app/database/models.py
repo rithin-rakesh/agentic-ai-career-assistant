@@ -38,6 +38,17 @@ class JobModel(Base):
     embedding_model = Column(String, nullable=True)   # Model name used for embeddings
     retrieval_score = Column(Float, nullable=True)     # Max/Average semantic similarity score achieved
 
+    # Phase 2.4 Normalization & Deduplication fields
+    remote_type = Column(String, nullable=True)
+    employment_type = Column(String, nullable=True)
+    salary_range = Column(String, nullable=True)
+    experience_level = Column(String, nullable=True)
+    apply_url = Column(String, nullable=True)
+    company_url = Column(String, nullable=True)
+    collected_timestamp = Column(DateTime, nullable=True)
+    content_hash = Column(String, nullable=True, index=True)
+    raw_metadata = Column(Text, nullable=True)
+
     def __repr__(self) -> str:
         return f"<JobModel(id={self.id}, title='{self.title}', company='{self.company}', source='{self.source}', match_score={self.match_score}, retrieval_score={self.retrieval_score})>"
 
@@ -202,6 +213,7 @@ class CandidateProfileModel(Base):
     linkedin = Column(String, nullable=True)
     github = Column(String, nullable=True)
     portfolio = Column(String, nullable=True)
+    current_location = Column(String, nullable=True)
     years_of_experience = Column(Float, nullable=True, default=0.0)
     preferred_salary = Column(String, nullable=True)
     notice_period = Column(String, nullable=True)
@@ -226,4 +238,18 @@ class ResumeVersionModel(Base):
     last_indexed = Column(DateTime, nullable=True)
     chunk_count = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+
+class SystemSettingsModel(Base):
+    """
+    KeyValue store for system configuration settings and encrypted parameters.
+    """
+    __tablename__ = "system_settings"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    setting_key = Column(String, unique=True, index=True, nullable=False)
+    setting_value = Column(Text, nullable=True)
+    is_encrypted = Column(Boolean, default=False, nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
 

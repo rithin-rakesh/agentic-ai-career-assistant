@@ -1,19 +1,19 @@
 import json
 from typing import Dict, Any, Optional
 from app.config import settings
-from app.ai.llm_client import OpenAIClient
+from app.ai.llm_client import BaseLLM, MockLLM, get_llm_client
 from app.database.repository import JobRepository
 from app.logger import logger
 
 class CareerStrategyAgent:
     """
-    CareerStrategyAgent evaluates job opportunities strategically:
-    - Analyzes long-term value, career growth, stability, and interview probability.
+    CareerStrategyAgent evaluates job opportunities strategically via Gemini / BaseLLM:
+    - Analyzes long-term value, career growth, stability, interview probability, and time investment score.
     - Decides whether the opportunity is worth pursuing immediately, worth prioritizing, or ignored.
-    - Generates dynamic reasoning and missing skills arrays.
+    - Generates dynamic reasoning, interview preparation suggestions, and learning effort recommendations.
     """
-    def __init__(self, llm_client: Optional[OpenAIClient] = None, repository: Optional[JobRepository] = None):
-        self.llm_client = llm_client or OpenAIClient()
+    def __init__(self, llm_client: Optional[BaseLLM] = None, repository: Optional[JobRepository] = None):
+        self.llm_client = llm_client or get_llm_client()
         self.repository = repository or JobRepository()
 
     def evaluate_strategy(self, job_dict: Dict[str, Any], resume_content: str) -> Dict[str, Any]:
@@ -28,23 +28,10 @@ class CareerStrategyAgent:
             cached = self.repository.get_career_decision(job_id)
             if cached:
                 logger.info(f"CareerStrategyAgent: Loaded cached decision for Job ID {job_id}")
-                return {
-                    "recommendation": cached.recommendation,
-                    "confidence": cached.confidence,
-                    "priority": cached.priority,
-                    "estimated_interview_probability": cached.estimated_interview_probability,
-                    "career_growth": cached.career_growth,
-                    "salary_competitiveness": cached.salary_competitiveness,
-                    "learning_effort": cached.learning_effort,
-                    "resume_changes_required": cached.resume_changes_required,
-                    "cover_letter_required": cached.cover_letter_required,
-                    "estimated_application_time": cached.estimated_application_time,
-                    "reasoning": json.loads(cached.reasoning) if cached.reasoning else [],
-                    "missing_skills": json.loads(cached.missing_skills) if cached.missing_skills else []
-                }
+                return cached
 
         # 2. Compute evaluation (Mock vs Live LLM)
-        if self.llm_client.mock_mode or settings.MOCK_LLM:
+        if isinstance(self.llm_client, MockLLM) or getattr(self.llm_client, "mock_fallback", None) is not None or settings.MOCK_LLM:
             decision = self._generate_mock_decision(job_dict)
         else:
             decision = self._run_llm_strategy(job_dict, resume_content)
@@ -80,9 +67,9 @@ class CareerStrategyAgent:
         # Deduce missing skills from the job description
         desc_lower = job_dict.get("description", "").lower()
         missing = []
-        if "docker" not in desc_lower and "docker" in settings.REQUIRED_SKILLS:
+        if "docker" not in desc_lower and "docker" in getattr(settings, "REQUIRED_SKILLS", []):
             missing.append("Docker")
-        if "kubernetes" not in desc_lower and "kubernetes" in settings.REQUIRED_SKILLS:
+        if "kubernetes" not in desc_lower and "kubernetes" in getattr(settings, "REQUIRED_SKILLS", []):
             missing.append("Kubernetes")
         if "aws" in desc_lower:
             missing.append("AWS Cloud Deployment")
@@ -150,7 +137,7 @@ class CareerStrategyAgent:
 
     def _run_llm_strategy(self, job_dict: Dict[str, Any], resume_content: str) -> Dict[str, Any]:
         """
-        Queries OpenAI / compatible LLM for strategic advice returning JSON.
+        Queries Gemini / BaseLLM for strategic advice returning structured JSON.
         """
         system_prompt = (
             "You are a Senior Career Strategy Advisor. You evaluate job opportunities and advise candidates "
@@ -174,13 +161,14 @@ class CareerStrategyAgent:
         
         try:
             logger.info("CareerStrategyAgent: Initiating LLM career strategy analysis call.")
-            response = self.llm_client.execute_completion(system_prompt, user_prompt)
+            response = self.llm_client.generate(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                response_format={"type": "json_object"}
+            )
             
-            # Clean and parse JSON response
-            cleaned_text = self.llm_client._clean_json_string(response)
-            parsed_decision = json.loads(cleaned_text)
+            parsed_decision = json.loads(response)
             
-            # Ensure key validation
             required_keys = ["recommendation", "confidence", "priority", "estimated_interview_probability", "career_growth", "learning_effort"]
             for key in required_keys:
                 if key not in parsed_decision:

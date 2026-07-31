@@ -238,13 +238,17 @@
             </div>
         </div>
         
-        <div class="actions-btn-group">
+        <div class="actions-btn-group" style="flex-wrap: wrap;">
             {% if app.status == 'Pending Approval' %}
             <button onclick="submitApproval('Approved')" class="btn-action btn-approve">Approve & Generate</button>
             <button onclick="submitApproval('Rejected')" class="btn-action btn-reject">Reject</button>
             <button onclick="submitApproval('Ignored')" class="btn-action btn-ignore">Ignore</button>
             {% else %}
-            <button onclick="submitApproval('Regenerate')" class="btn-action btn-regenerate">Regenerate Packages</button>
+            <a href="/applications/{{ app.id }}" class="btn-action" style="background-color: var(--primary); color: #ffffff; text-decoration: none;">View Package Center</a>
+            <a href="{{ job.apply_url or job.job_url }}" target="_blank" rel="noopener noreferrer" class="btn-action" style="background-color: var(--success); color: #ffffff; text-decoration: none;">Apply Now ↗</a>
+            <a href="/api/applications/{{ app.id }}/download/resume/pdf" class="btn-action" style="background-color: #334155; color: #ffffff; text-decoration: none;">Resume (PDF)</a>
+            <a href="/api/applications/{{ app.id }}/download/cover-letter/pdf" class="btn-action" style="background-color: #334155; color: #ffffff; text-decoration: none;">Cover Letter (PDF)</a>
+            <button onclick="submitApproval('Regenerate')" class="btn-action btn-regenerate">Regenerate</button>
             {% endif %}
         </div>
     </div>
@@ -346,8 +350,12 @@
                 });
                 
                 if (response.ok) {
-                    alert('Action executed successfully.');
-                    window.location.reload();
+                    if (action === 'Approved' || action === 'Regenerate') {
+                        window.location.href = `/applications/{{ app.id if app else 0 }}`;
+                    } else {
+                        alert('Action executed successfully.');
+                        window.location.reload();
+                    }
                 } else {
                     const err = await response.json();
                     alert(`Failed: ${err.detail || 'Internal server error'}`);

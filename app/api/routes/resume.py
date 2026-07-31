@@ -11,7 +11,7 @@ from app.database.repository import JobRepository
 from app.resume.resume_loader import ResumeLoader
 from app.resume.chunk_generator import ResumeChunkGenerator
 from app.rag.embedding_service import EmbeddingService
-from app.rag.vector_store import VectorStore
+from app.rag.vector_store import VectorStore, get_vector_store
 from app.rag.indexing import ResumeIndexingPipeline
 
 router = APIRouter(prefix="/api/resume", tags=["Resume"])
@@ -26,9 +26,9 @@ def process_and_index_resume(
     repo: JobRepository
 ) -> Dict[str, Any]:
     """
-    Executes the 9-step Resume Processing Workflow:
-    Upload -> Validate -> Store -> Extract Text -> Chunk -> Generate Embeddings -> Update Qdrant -> Activate Resume -> Archive Previous Version.
-    Uses file hashing to avoid unnecessary re-indexing.
+    Executes the Resume Processing Workflow safely:
+    Validation -> Extraction -> Hash Check -> File Save -> Chunking -> Embedding & Qdrant Indexing -> DB Activation.
+    Catches failures at each stage and returns structured JSON responses.
     """
     # 1. Validate file extension and non-empty
     if not raw_bytes or len(raw_bytes) == 0:
@@ -57,10 +57,11 @@ def process_and_index_resume(
         if not extracted_text or not extracted_text.strip():
             raise ValueError("No extractable text content found in resume file.")
     except Exception as e:
-        logger.error(f"Resume text extraction failed: {e}", exc_info=True)
+        err_msg = str(e).encode("utf-8", errors="replace").decode("utf-8")
+        logger.error(f"Resume text extraction failed: {err_msg}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to extract text from resume: {e}"
+            detail=f"Extraction Failed: {err_msg}"
         )
     finally:
         if os.path.exists(temp_path):
@@ -70,61 +71,80 @@ def process_and_index_resume(
                 pass
 
     # 3. Detect Changes using SHA-256 Hashing
-    text_hash = _compute_hash(extracted_text)
-    active_version = repo.get_active_resume_version()
+    try:
+        text_hash = _compute_hash(extracted_text)
+        active_version = repo.get_active_resume_version()
 
-    is_volatile_db = settings.VECTOR_DB_URL == ":memory:"
-    if active_version and active_version.file_hash == text_hash and not is_volatile_db:
-        logger.info(f"Resume file hash ({text_hash[:8]}) matches active version v{active_version.version}. Skipping re-indexing.")
-        return {
-            "status": "cached",
-            "message": f"Resume unchanged. Version v{active_version.version} is already active and indexed.",
-            "version": active_version.version,
-            "filename": active_version.filename,
-            "upload_date": active_version.upload_date.isoformat() if active_version.upload_date else None,
-            "embedding_status": active_version.embedding_status,
-            "last_indexed": active_version.last_indexed.isoformat() if active_version.last_indexed else None,
-            "chunk_count": active_version.chunk_count,
-            "is_active": True
-        }
+        is_volatile_db = settings.VECTOR_DB_URL == ":memory:"
+        if active_version and active_version.file_hash == text_hash and not is_volatile_db:
+            logger.info(f"Resume file hash ({text_hash[:8]}) matches active version v{active_version.version}. Skipping re-indexing.")
+            return {
+                "status": "cached",
+                "message": f"Resume unchanged. Version v{active_version.version} is already active and indexed.",
+                "version": active_version.version,
+                "filename": active_version.filename,
+                "upload_date": active_version.upload_date.isoformat() if active_version.upload_date else None,
+                "embedding_status": active_version.embedding_status,
+                "last_indexed": active_version.last_indexed.isoformat() if active_version.last_indexed else None,
+                "chunk_count": active_version.chunk_count,
+                "is_active": True
+            }
+    except Exception as e:
+        logger.warning(f"Hash validation or active version lookup fallback: {e}")
 
     # 4. Store PDF / Text files with versioning
-    resumes_dir = os.path.join(settings.BASE_DIR, "data", "resumes")
-    os.makedirs(resumes_dir, exist_ok=True)
-    
-    max_versions = repo.get_all_resume_versions()
-    next_ver_num = (max_versions[0].version + 1) if max_versions else 1
-    timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+    try:
+        resumes_dir = os.path.join(settings.BASE_DIR, "data", "resumes")
+        os.makedirs(resumes_dir, exist_ok=True)
+        
+        max_versions = repo.get_all_resume_versions()
+        next_ver_num = (max_versions[0].version + 1) if max_versions else 1
+        timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    saved_file_path = os.path.join(resumes_dir, f"resume_v{next_ver_num}_{timestamp_str}{ext}")
-    saved_text_path = os.path.join(resumes_dir, f"resume_v{next_ver_num}_{timestamp_str}.md")
+        saved_file_path = os.path.join(resumes_dir, f"resume_v{next_ver_num}_{timestamp_str}{ext}")
+        saved_text_path = os.path.join(resumes_dir, f"resume_v{next_ver_num}_{timestamp_str}.md")
 
-    with open(saved_file_path, "wb") as f:
-        f.write(raw_bytes)
+        with open(saved_file_path, "wb") as f:
+            f.write(raw_bytes)
 
-    with open(saved_text_path, "w", encoding="utf-8") as f:
-        f.write(extracted_text)
+        with open(saved_text_path, "w", encoding="utf-8") as f:
+            f.write(extracted_text)
 
-    # Overwrite default data/resume.md for backward compatibility
-    default_resume_path = os.path.abspath(settings.RESUME_TEMPLATE)
-    os.makedirs(os.path.dirname(default_resume_path), exist_ok=True)
-    with open(default_resume_path, "w", encoding="utf-8") as f:
-        f.write(extracted_text)
+        # Overwrite default data/resume.md for backward compatibility
+        default_resume_path = os.path.abspath(settings.RESUME_TEMPLATE)
+        os.makedirs(os.path.dirname(default_resume_path), exist_ok=True)
+        with open(default_resume_path, "w", encoding="utf-8") as f:
+            f.write(extracted_text)
 
-    # Update resume hash cache file
-    hash_file_path = os.path.join(settings.BASE_DIR, "data", "resume_hash.txt")
-    with open(hash_file_path, "w", encoding="utf-8") as f:
-        f.write(text_hash)
+        # Update resume hash cache file
+        hash_file_path = os.path.join(settings.BASE_DIR, "data", "resume_hash.txt")
+        with open(hash_file_path, "w", encoding="utf-8") as f:
+            f.write(text_hash)
+    except Exception as e:
+        err_msg = str(e).encode("utf-8", errors="replace").decode("utf-8")
+        logger.error(f"Failed to persist resume version files: {err_msg}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"File Persistence Failed: {err_msg}"
+        )
 
     # 5. Chunk, Generate Embeddings, Update Qdrant
     logger.info(f"Initiating chunking and embedding generation for resume v{next_ver_num}...")
-    embedding_service = EmbeddingService()
-    vector_store = VectorStore()
+    try:
+        chunks = ResumeChunkGenerator.generate_chunks(extracted_text)
+    except Exception as e:
+        err_msg = str(e).encode("utf-8", errors="replace").decode("utf-8")
+        logger.error(f"Chunking Failed: {err_msg}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chunking Failed: {err_msg}"
+        )
 
-    chunks = ResumeChunkGenerator.generate_chunks(extracted_text)
     chunk_count = len(chunks)
 
     try:
+        embedding_service = EmbeddingService()
+        vector_store = get_vector_store()
         vector_store.rebuild_index()
         if chunks:
             contents = [chunk.content for chunk in chunks]
@@ -138,18 +158,23 @@ def process_and_index_resume(
                 )
         embedding_status = "Indexed"
     except Exception as e:
-        logger.error(f"Failed to update Qdrant vector DB: {e}", exc_info=True)
+        err_msg = str(e).encode("utf-8", errors="replace").decode("utf-8")
+        logger.error(f"Embedding/Indexing Failed: {err_msg}", exc_info=True)
         embedding_status = "Failed"
 
     # 6. Activate Resume & Archive Previous Version
-    new_version_record = repo.create_resume_version(
-        filename=filename,
-        file_path=saved_file_path,
-        file_hash=text_hash,
-        extracted_text_path=saved_text_path,
-        chunk_count=chunk_count,
-        embedding_status=embedding_status
-    )
+    try:
+        new_version_record = repo.create_resume_version(
+            filename=filename,
+            file_path=saved_file_path,
+            file_hash=text_hash,
+            extracted_text_path=saved_text_path,
+            chunk_count=chunk_count,
+            embedding_status=embedding_status
+        )
+    except Exception as e:
+        logger.error(f"Failed to create resume version record in DB: {e}", exc_info=True)
+        new_version_record = None
 
     logger.info(f"Resume: Activated version v{next_ver_num} ({filename}) with {chunk_count} chunks.")
 
@@ -158,9 +183,9 @@ def process_and_index_resume(
         "message": f"Resume v{next_ver_num} uploaded, text extracted, and {chunk_count} chunks indexed successfully.",
         "version": new_version_record.version if new_version_record else next_ver_num,
         "filename": filename,
-        "upload_date": new_version_record.upload_date.isoformat() if new_version_record else datetime.now(timezone.utc).isoformat(),
+        "upload_date": new_version_record.upload_date.isoformat() if new_version_record and new_version_record.upload_date else datetime.now(timezone.utc).isoformat(),
         "embedding_status": embedding_status,
-        "last_indexed": new_version_record.last_indexed.isoformat() if new_version_record else datetime.now(timezone.utc).isoformat(),
+        "last_indexed": new_version_record.last_indexed.isoformat() if new_version_record and new_version_record.last_indexed else datetime.now(timezone.utc).isoformat(),
         "chunk_count": chunk_count,
         "is_active": True
     }
@@ -242,6 +267,7 @@ def get_resume_status(
 
 
 @router.post("")
+@router.post("/upload")
 @router.post("/upload-pdf")
 def upload_pdf_resume(
     file: Optional[UploadFile] = File(None, description="Resume PDF or Markdown file upload"),
@@ -252,20 +278,74 @@ def upload_pdf_resume(
     """
     Handles PDF or Markdown resume upload following the full automated workflow.
     Validates, extracts text, computes SHA-256 hash, stores versioned files, chunks, embeds into Qdrant, and archives previous versions.
+    Returns structured JSON payloads for all outcomes.
     """
-    if file:
-        filename = file.filename or "uploaded_resume.pdf"
-        _, ext = os.path.splitext(filename)
-        if not ext:
-            ext = ".pdf"
-        raw_bytes = file.file.read()
-        return process_and_index_resume(filename=filename, raw_bytes=raw_bytes, file_ext=ext, repo=repo)
-    elif resume_text and resume_text.strip():
-        filename = "resume.md"
-        raw_bytes = resume_text.encode("utf-8")
-        return process_and_index_resume(filename=filename, raw_bytes=raw_bytes, file_ext=".md", repo=repo)
-    else:
+    try:
+        if file:
+            filename = file.filename or "uploaded_resume.pdf"
+            _, ext = os.path.splitext(filename)
+            if not ext:
+                ext = ".pdf"
+            raw_bytes = file.file.read()
+            return process_and_index_resume(filename=filename, raw_bytes=raw_bytes, file_ext=ext, repo=repo)
+        elif resume_text and resume_text.strip():
+            filename = "resume.md"
+            raw_bytes = resume_text.encode("utf-8")
+            return process_and_index_resume(filename=filename, raw_bytes=raw_bytes, file_ext=".md", repo=repo)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No file uploaded or resume text provided."
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        err_msg = str(e).encode("utf-8", errors="replace").decode("utf-8")
+        logger.error(f"Unhandled exception in upload_pdf_resume: {err_msg}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No file uploaded or resume text provided."
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal Error: {err_msg}"
         )
+
+@router.delete("")
+@router.delete("/active")
+def delete_active_resume(
+    repo: JobRepository = Depends(JobRepository),
+    username: str = Depends(get_current_user)
+):
+    """
+    Deactivates active resume record, clears Qdrant vector index, and resets default resume cache.
+    """
+    try:
+        from app.database.models import ResumeVersionModel
+        with repo.session_provider() as session:
+            actives = session.query(ResumeVersionModel).filter(ResumeVersionModel.is_active == True).all()
+            for prev in actives:
+                prev.is_active = False
+
+        # Clear vector index
+        try:
+            vector_store = VectorStore()
+            vector_store.rebuild_index()
+        except Exception as e:
+            logger.warning(f"Failed to clear vector store during resume deletion: {e}")
+
+        # Reset resume hash cache
+        hash_file_path = os.path.join(settings.BASE_DIR, "data", "resume_hash.txt")
+        if os.path.exists(hash_file_path):
+            try:
+                os.remove(hash_file_path)
+            except Exception:
+                pass
+
+        return {
+            "status": "success",
+            "message": "Active resume version deactivated and Qdrant vector index cleared successfully."
+        }
+    except Exception as e:
+        logger.error(f"Failed to delete active resume: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete active resume: {e}"
+        )
+

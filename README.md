@@ -34,117 +34,96 @@ Production-grade **Personal Autonomous AI Career Assistant** powered by **LangGr
                                           └──────────┘
 ```
 
-### Automated End-to-End Execution Sequence
-```
-Scheduler Daemon → Collect Live Jobs → Normalize → Deduplicate → Store (PostgreSQL)
-  ↓
-RAG Vector Retrieval (Qdrant) → AI Matching & Scoring → Career Strategy Evaluation
-  ↓
-Generate Tailored Resume (PDF/Markdown) → Generate Tailored Cover Letter
-  ↓
-Send Instant / Daily Email Alerts (Gmail SMTP) → Update Web Control Center → Sleep
-```
-
 ---
 
-## ⚡ Quick Start with Docker Compose
+## ⚡ Deployment & Startup Guide
 
-The entire application runs seamlessly with zero source code edits using Docker Compose.
+### 1. Production Startup (Docker Compose)
+To launch the full production cluster loading `.env.production`:
 
 ```bash
 # 1. Clone repository
 git clone <repository_url>
 cd job_agent
 
-# 2. Start full stack cluster
+# 2. Copy production environment template
+cp .env.production .env
+
+# 3. Launch container stack
 docker compose up -d --build
-
-# 3. Access Web Dashboard
-open http://localhost/ (or http://SERVER_IP/)
 ```
+Access dashboard at `http://localhost/` (or `http://SERVER_IP/`).
 
-Default Web Credentials:
-- **Username**: `admin`
-- **Password**: `admin` (or `password`)
-
----
-
-## 📥 Installation (Local Development)
-
-To run locally without Docker:
+### 2. Local Development Startup
+To run locally in virtual environment mode:
 
 ```bash
-# 1. Create Virtual Environment
+# 1. Create & activate environment
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .\.venv\Scripts\activate
 
-# 2. Install Dependencies
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Run FastAPI Application
+# 3. Copy development environment template
+cp .env.development .env
+
+# 4. Launch FastAPI server
 uvicorn app.api.app:app --reload --port 8000
 ```
-
-Access local app at: `http://127.0.0.1:8000`
-
----
-
-## ⚙️ Configuration & User Setup
-
-### 1. Gemini AI Configuration
-Configure your Gemini or OpenAI API credentials directly in the Dashboard under `/settings` or in `.env`:
-- **Gemini API Key**: Obtain from Google AI Studio (`https://aistudio.google.com/`)
-- **Primary Model**: Select `gemini-2.5-flash` or `gemini-1.5-pro`
-- **Hyperparameters**: Temperature (e.g. `0.2`), Max Tokens (e.g. `2048`), Request Timeout (e.g. `30` seconds)
-
-### 2. Email Configuration (Gmail SMTP)
-Configure Gmail SMTP notifications in `/settings`:
-- **SMTP Host**: `smtp.gmail.com`
-- **SMTP Port**: `587` (TLS) or `465` (SSL)
-- **Sender Username**: Your Gmail address (`yourname@gmail.com`)
-- **App Password**: Generate a 16-character App Password via Google Account Security (`https://myaccount.google.com/apppasswords`)
-- **Recipient Email**: Target email address for daily reports
-- **Actions**: Click **Validate Connection** to verify handshake or **Send Test Email** to verify delivery.
-
-### 3. Resume Upload & Vector Indexing
-Upload your resume in PDF, Markdown, or Plain Text via `/settings`:
-- **PDF Upload**: Select or drag a `.pdf` file.
-- **Automated Workflow**: Text extraction (`pypdf`), section chunking (`ResumeChunkGenerator`), batch vector embedding generation (`EmbeddingService`), and Qdrant database ingestion (`VectorStore`).
-- **File Hashing**: SHA-256 hash checks prevent unnecessary re-indexing if the resume file hasn't changed.
-
-### 4. Job Preferences & Scheduler Controls
-Configure job targeting and background sync in `/settings`:
-- **Target Roles**: `AI Engineer`, `ML Architect`, `Data Scientist`, etc.
-- **Target Locations**: `Remote`, `San Francisco`, `Bangalore`, etc.
-- **Work Mode Toggles**: Remote, Hybrid, Onsite checkboxes
-- **Salary & Experience**: Salary range bounds and Experience Level dropdown
-- **Scheduler Frequency**: Select `1 hour`, `2 hours`, `4 hours`, `6 hours`, `12 hours`, or `24 hours`
-- **Scheduler Controls**: `Start Agent`, `Pause Agent`, `Resume Agent`, `Run Now`, `Restart Scheduler`
+Access local dashboard at `http://127.0.0.1:8000`.
 
 ---
 
-## 🚀 Deployment Guide
+## ⚙️ Environment Variables Matrix
 
-### Deployment Targets
-Optimized for:
-1. **Oracle Cloud Always Free VM** (Ampere ARM 4-core / 24GB RAM or x86_64)
-2. **Ubuntu Server** (20.04 / 22.04 / 24.04 LTS)
-3. **Personal Desktop / Local Server**
+| Variable | Default Value | Description / Purpose |
+|----------|---------------|-----------------------|
+| `ENVIRONMENT` | `production` | Deployment mode tag (`development`, `production`). |
+| `DATABASE_URL` | `postgresql://...` | Database connection URI (PostgreSQL or SQLite). |
+| `POSTGRES_PASSWORD` | `prod_secure_db_password` | PostgreSQL database user password. |
+| `VECTOR_DB_URL` | `http://qdrant:6333` | Qdrant vector database HTTP API URL. |
+| `REDIS_URL` | `redis://redis:6379/0` | Redis task queue broker URL. |
+| `GEMINI_API_KEY` | *(Empty)* | Google Gemini API Key from AI Studio. |
+| `MOCK_COLLECTOR` | `False` | Toggle between live HTTP scraping and simulated jobs. |
+| `MOCK_LLM` | `False` | Toggle between live LLM queries and simulated evaluations. |
+| `SMTP_HOST` | `smtp.gmail.com` | SMTP host for email report dispatches. |
+| `SMTP_PORT` | `587` | SMTP port (587 TLS / 465 SSL). |
+| `SMTP_USERNAME` | *(Empty)* | Gmail sender email address. |
+| `SMTP_PASSWORD` | *(Empty)* | 16-character Gmail App Password. |
+| `SECRET_KEY` | *(Random String)* | JWT session signing secret. |
+| `GF_SECURITY_ADMIN_PASSWORD` | `admin` | Grafana dashboard administrator password. |
 
-### Deployment Steps on Ubuntu / Oracle Cloud
+---
+
+## 💾 Backup & Disaster Recovery Procedure
+
+### 1. PostgreSQL Database Backup
+To perform an on-demand SQL dump of all jobs, applications, and logs:
 ```bash
-# 1. Update system & install Docker
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y docker.io docker-compose-v2 git
-
-# 2. Clone repository & start
-git clone <repository_url>
-cd job_agent
-sudo docker compose up -d --build
-
-# 3. Verify health
-curl http://localhost/health
+docker exec -t job_agent_postgres pg_dump -U jobuser -d jobdb > backup_jobdb_$(date +%Y%m%d_%H%M%S).sql
 ```
+
+To restore a database snapshot:
+```bash
+cat backup_jobdb.sql | docker exec -i job_agent_postgres psql -U jobuser -d jobdb
+```
+
+### 2. Qdrant Vector Storage Backup
+To snapshot vector embeddings and resume chunks:
+```bash
+curl -X POST http://localhost:6333/collections/resume_chunks/snapshots
+```
+Snapshots are persisted inside the named volume `qdrant_data`.
+
+---
+
+## 📊 Health Endpoints & Observability
+
+- **System Health Dashboard**: `http://localhost/system-status`
+- **JSON Health API**: `http://localhost/health`
+- **Prometheus Metrics Counter**: `http://localhost/metrics` (or `http://localhost:9090`)
+- **Grafana Monitoring Dashboard**: `http://localhost:3000` (Login: `admin` / `${GF_SECURITY_ADMIN_PASSWORD}`)
 
 ---
 
@@ -153,16 +132,15 @@ curl http://localhost/health
 | Issue | Cause | Resolution |
 |-------|-------|------------|
 | **Login Error 500** | Missing JWT cookie / parameter binding | Access `/login` and submit `admin` / `admin`. |
-| **Qdrant DB Lock / Error** | Parallel file access | In tests or standalone mode, `VECTOR_DB_URL` uses `:memory:`. In Docker, Qdrant runs as a standalone service on port `6373`. |
-| **SMTP Auth Failed (535)** | Invalid password | Use a 16-character Gmail App Password instead of regular login password. |
-| **PDF Text Extraction Empty** | Scanned PDF image | Ensure PDF contains selectable vector text. Plain text or Markdown uploads can also be used as fallbacks. |
-| **Port 80 Conflict** | Nginx or local web server | Change host port mapping in `docker-compose.yml` (e.g. `"8080:80"`). |
+| **Qdrant Connection Error** | Service boot delay | Check `docker compose logs qdrant`. Qdrant healthcheck ensures port 6333 is ready. |
+| **SMTP Auth Failed (535)** | Invalid credentials | Use a 16-character Gmail App Password instead of regular login password. |
+| **PDF Extraction Empty** | Scanned image PDF | Use text-selectable PDF or paste Markdown directly in Dashboard settings. |
 
 ---
 
 ## 🧪 Testing & Verification
 
-Run the full pytest verification suite (61 unit, integration, and infrastructure tests):
+Run the full Pytest test suite (61 unit, integration, and infrastructure tests):
 ```bash
 pytest tests/ -v
 ```

@@ -21,6 +21,8 @@ from app.agents.learning_agent import LearningAgent
 from app.agents.preference_agent import PreferenceAgent
 from app.agents.career_strategy_agent import CareerStrategyAgent
 from app.agents.recommendation_agent import RecommendationAgent
+from app.agents.digest_agent import DigestAgent
+from app.services.pipeline_tracker import pipeline_tracker
 from app.logger import logger
 
 class GraphNodeOrchestrator:
@@ -29,7 +31,22 @@ class GraphNodeOrchestrator:
     Maintains clean state mapping, captures errors inside nodes, and
     supplies performance timing and token usage logs to database execution logs.
     """
-    def __init__(self, collector: CollectorAgent, filtering: FilteringAgent, retrieval: RetrievalAgent, matching: MatchingAgent, ranking: RankingAgent, persistence: PersistenceAgent, notification: NotificationAgent = None, application: ApplicationAgent = None, feedback_agent: FeedbackAgent = None, learning_agent: LearningAgent = None, strategy_agent: CareerStrategyAgent = None, recommendation_agent: RecommendationAgent = None):
+    def __init__(
+        self,
+        collector: CollectorAgent,
+        filtering: FilteringAgent,
+        retrieval: RetrievalAgent,
+        matching: MatchingAgent,
+        ranking: RankingAgent,
+        persistence: PersistenceAgent,
+        notification: NotificationAgent = None,
+        application: ApplicationAgent = None,
+        feedback_agent: FeedbackAgent = None,
+        learning_agent: LearningAgent = None,
+        strategy_agent: CareerStrategyAgent = None,
+        recommendation_agent: RecommendationAgent = None,
+        digest_agent: DigestAgent = None
+    ):
         self.collector = collector
         self.filtering = filtering
         self.retrieval = retrieval
@@ -38,6 +55,8 @@ class GraphNodeOrchestrator:
         self.persistence = persistence
         self.notification = notification
         self.application = application
+        self.digest_agent = digest_agent or DigestAgent()
+        self._last_digest_date = None
         repo = getattr(persistence, "repository", None)
         self.feedback_agent = feedback_agent or FeedbackAgent(repo)
         self.learning_agent = learning_agent or LearningAgent(repo)
@@ -59,6 +78,7 @@ class GraphNodeOrchestrator:
         node_name = "collect_jobs_node"
         logger.info(f"Node execution started: {node_name}")
         start_time = datetime.now(timezone.utc)
+        pipeline_tracker.set_stage("COLLECT_JOBS")
         
         errors = list(state.get("errors", []))
         stats = dict(state.get("statistics", {}))
@@ -95,6 +115,7 @@ class GraphNodeOrchestrator:
         node_name = "filter_jobs_node"
         logger.info(f"Node execution started: {node_name}")
         start_time = datetime.now(timezone.utc)
+        pipeline_tracker.set_stage("FILTER_JOBS")
         
         errors = list(state.get("errors", []))
         stats = dict(state.get("statistics", {}))
@@ -289,6 +310,7 @@ class GraphNodeOrchestrator:
         node_name = "persist_jobs_node"
         logger.info(f"Node execution started: {node_name}")
         start_time = datetime.now(timezone.utc)
+        pipeline_tracker.set_stage("PERSIST_JOBS")
         
         errors = list(state.get("errors", []))
         stats = dict(state.get("statistics", {}))
@@ -682,6 +704,52 @@ class GraphNodeOrchestrator:
             self._log_execution(node_name, start_time, end_time, "failure", error_message=str(e))
             
             return {
+                "errors": errors,
+                "current_step": node_name
+            }
+
+    def digest_jobs_node(self, state: GraphState) -> Dict[str, Any]:
+        node_name = "digest_jobs_node"
+        logger.info(f"Node execution started: {node_name}")
+        start_time = datetime.now(timezone.utc)
+        pipeline_tracker.set_stage("SEND_DAILY_DIGEST")
+        
+        errors = list(state.get("errors", []))
+        ranked = state.get("ranked_jobs", [])
+        
+        try:
+            high_jobs = [j for j in ranked if j.get("priority") == "High"]
+            medium_jobs = [j for j in ranked if j.get("priority") == "Medium"]
+            
+            today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            digest_sent = False
+            
+            if (high_jobs or medium_jobs) and getattr(self, "_last_digest_date", None) != today_str:
+                success, attempts, err_msg = self.digest_agent.send_daily_digest(high_jobs, medium_jobs)
+                if success:
+                    self._last_digest_date = today_str
+                    digest_sent = True
+                    logger.info("digest_jobs_node: Daily Digest email delivered successfully.")
+                else:
+                    logger.warning(f"digest_jobs_node: Daily Digest execution note: {err_msg}")
+            
+            end_time = datetime.now(timezone.utc)
+            self._log_execution(node_name, start_time, end_time, "success")
+            
+            return {
+                "digest_sent": digest_sent,
+                "current_step": node_name
+            }
+        except Exception as e:
+            err_msg = f"digest_jobs_node failed: {e}"
+            logger.error(err_msg, exc_info=True)
+            errors.append(err_msg)
+            
+            end_time = datetime.now(timezone.utc)
+            self._log_execution(node_name, start_time, end_time, "failure", error_message=str(e))
+            
+            return {
+                "digest_sent": False,
                 "errors": errors,
                 "current_step": node_name
             }

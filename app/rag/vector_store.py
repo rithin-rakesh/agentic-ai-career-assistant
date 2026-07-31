@@ -1,4 +1,5 @@
 import uuid
+import threading
 from typing import List, Dict, Any, Optional
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
@@ -9,22 +10,33 @@ class VectorStore:
     """
     Wrapper interface encapsulating Qdrant vector database operations.
     Supports in-memory operations, local file persistence, or remote cluster instances.
+    Thread-safe singleton connection management prevents file locking conflicts.
     """
+    _shared_client: Optional[QdrantClient] = None
+    _shared_url: Optional[str] = None
+    _lock = threading.Lock()
+
     def __init__(self, collection_name: Optional[str] = None):
         self.collection_name = collection_name or settings.COLLECTION_NAME
         self.db_url = settings.qdrant_path_absolute
         self.dimension = 384  # Matches dimension of the embedding service (all-MiniLM-L6-v2)
-        
-        logger.info(f"Initializing Qdrant client connection. Target: {self.db_url}")
-        
-        # Select client type based on settings
-        if self.db_url == ":memory:":
-            self.client = QdrantClient(location=":memory:")
-        elif self.db_url.startswith("http://") or self.db_url.startswith("https://"):
-            self.client = QdrantClient(url=self.db_url)
-        else:
-            # File system persistence
-            self.client = QdrantClient(path=self.db_url)
+
+        with VectorStore._lock:
+            if VectorStore._shared_client is not None and VectorStore._shared_url == self.db_url:
+                self.client = VectorStore._shared_client
+            else:
+                logger.info(f"Initializing Qdrant client connection. Target: {self.db_url}")
+                if self.db_url == ":memory:":
+                    self.client = QdrantClient(location=":memory:")
+                elif self.db_url.startswith("http://") or self.db_url.startswith("https://"):
+                    # Server mode: always connect strictly via HTTP URL
+                    self.client = QdrantClient(url=self.db_url)
+                else:
+                    # File system persistence
+                    self.client = QdrantClient(path=self.db_url)
+
+                VectorStore._shared_client = self.client
+                VectorStore._shared_url = self.db_url
 
     def create_collection(self) -> None:
         """
@@ -53,7 +65,6 @@ class VectorStore:
         Inserts/upserts a single resume chunk vector and metadata payload.
         Maps the string chunk_id to a deterministic UUID to avoid duplicates.
         """
-        # Map string chunk_id to standard UUID (Qdrant Point ID must be UUID or integer)
         point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, chunk_id))
         
         try:
@@ -123,3 +134,16 @@ class VectorStore:
         logger.info(f"Rebuilding Qdrant vector index for '{self.collection_name}'")
         self.delete_collection()
         self.create_collection()
+
+_global_vector_store: Optional[VectorStore] = None
+
+def get_vector_store(collection_name: Optional[str] = None) -> VectorStore:
+    """
+    Returns a process-wide VectorStore instance to prevent duplicate client initialization.
+    """
+    global _global_vector_store
+    if _global_vector_store is None:
+        _global_vector_store = VectorStore(collection_name=collection_name)
+    elif collection_name and _global_vector_store.collection_name != collection_name:
+        _global_vector_store.collection_name = collection_name
+    return _global_vector_store

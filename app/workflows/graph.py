@@ -22,9 +22,10 @@ def compile_workflow(orchestrator: GraphNodeOrchestrator):
     workflow.add_node("feedback_node", orchestrator.feedback_node)
     workflow.add_node("learning_node", orchestrator.learning_node)
     workflow.add_node("career_strategy_node", orchestrator.career_strategy_node)
-    workflow.add_node("persist_jobs_node", orchestrator.persist_jobs_node)
     workflow.add_node("notification_jobs_node", orchestrator.notification_jobs_node)
+    workflow.add_node("digest_jobs_node", orchestrator.digest_jobs_node)
     workflow.add_node("application_jobs_node", orchestrator.application_jobs_node)
+    workflow.add_node("persist_jobs_node", orchestrator.persist_jobs_node)
     
     # 3. Add edges
     # START -> collect -> filter
@@ -54,12 +55,13 @@ def compile_workflow(orchestrator: GraphNodeOrchestrator):
         }
     )
     
-    # rank -> feedback -> learning -> career_strategy -> notification -> application -> persist -> END
+    # rank -> feedback -> learning -> career_strategy -> notification -> digest -> application -> persist -> END
     workflow.add_edge("rank_jobs_node", "feedback_node")
     workflow.add_edge("feedback_node", "learning_node")
     workflow.add_edge("learning_node", "career_strategy_node")
     workflow.add_edge("career_strategy_node", "notification_jobs_node")
-    workflow.add_edge("notification_jobs_node", "application_jobs_node")
+    workflow.add_edge("notification_jobs_node", "digest_jobs_node")
+    workflow.add_edge("digest_jobs_node", "application_jobs_node")
     workflow.add_edge("application_jobs_node", "persist_jobs_node")
     workflow.add_edge("persist_jobs_node", END)
     

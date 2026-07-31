@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instant Job Alert</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: #ffffff;
+            padding: 30px 24px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+        .header p {
+            margin: 8px 0 0 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .badge {
+            background-color: #fef3c7;
+            color: #d97706;
+            font-weight: 600;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+        .content {
+            padding: 30px 24px;
+        }
+        .job-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #f8fafc;
+            margin-bottom: 24px;
+        }
+        .job-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0 0 4px 0;
+        }
+        .job-meta {
+            font-size: 14px;
+            color: #64748b;
+            margin: 0 0 16px 0;
+        }
+        .score-pill {
+            background-color: #dcfce7;
+            color: #15803d;
+            font-weight: 700;
+            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-bottom: 16px;
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #475569;
+            margin: 20px 0 8px 0;
+        }
+        .section-text {
+            font-size: 14px;
+            color: #334155;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .skills-list {
+            margin: 8px 0 0 0;
+            padding-left: 20px;
+            font-size: 14px;
+            color: #334155;
+        }
+        .btn-container {
+            text-align: center;
+            margin-top: 24px;
+        }
+        .btn {
+            background-color: #4f46e5;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 16px;
+            padding: 12px 32px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-block;
+            transition: background-color 0.2s;
+        }
+        .footer {
+            background-color: #f1f5f9;
+            padding: 24px;
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+            border-top: 1px solid #e2e8f0;
+        }
+        .footer p {
+            margin: 4px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span class="badge">MATCH DETECTED</span>
+            <h1>New High Priority Job Alert!</h1>
+            <p>An opportunity matches your profile and experience thresholds.</p>
+        </div>
+        <div class="content">
+            <div class="job-card">
+                <div class="score-pill">75% Match Score</div>
+                <h2 class="job-title">Python Developer</h2>
+                <div class="job-meta"><strong>Indeed Tech Partners</strong> &bull; Remote</div>
+                
+                
+                <div class="section-title">AI Summary & Reasoning</div>
+                <p class="section-text">Strong alignment with candidate's Python, FastAPI, and GenAI skill set.</p>
+                
+
+                
+                <div class="section-title">Missing Skills / Improvement Areas</div>
+                <p class="section-text">The system identified these missing requirements: <strong>['Kubernetes']</strong></p>
+                
+            </div>
+            
+            <div class="btn-container">
+                <a href="https://indeed.com/viewjob?jk=indeed111" class="btn" target="_blank">Apply Now</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>You are receiving this because your automated agentic job search assistant found a match.</p>
+            <p>&copy; 2026 Agentic AI Job Search Assistant. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

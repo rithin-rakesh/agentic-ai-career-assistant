@@ -6,14 +6,15 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy import text
 from app.config import settings
 from app.database.repository import JobRepository
-from app.rag.vector_store import VectorStore
+from app.rag.vector_store import VectorStore, get_vector_store
 from app.ai.llm_client import OpenAIClient
 from app.scheduler.scheduler_manager import scheduler_manager
 from app.logger import logger
 
-router = APIRouter(prefix="/health", tags=["Monitoring"])
+router = APIRouter(tags=["Monitoring"])
 
-@router.get("")
+@router.get("/health")
+@router.get("/api/system/status")
 def health_check(
     repo: JobRepository = Depends(JobRepository)
 ):
@@ -39,7 +40,7 @@ def health_check(
         app_count = 0
         with repo.session_provider() as session:
             session.execute(text("SELECT 1"))
-            job_count = repo.get_job_count()
+            job_count = repo.count_jobs()
             from app.database.models import ApplicationModel
             app_count = session.query(ApplicationModel).count()
         db_latency = time.perf_counter() - start_time
@@ -74,7 +75,7 @@ def health_check(
     # 4. Vector Database Check (Qdrant)
     try:
         start_time = time.perf_counter()
-        v_store = VectorStore()
+        v_store = get_vector_store()
         collections = v_store.client.get_collections()
         qdrant_latency = time.perf_counter() - start_time
         details["qdrant"] = {
@@ -105,7 +106,7 @@ def health_check(
             "primary_model": settings.MODEL_NAME,
             "temperature": settings.TEMPERATURE,
             "max_tokens": settings.MAX_TOKENS,
-            "mode": "MOCK" if client.mock_mode else "LIVE_API"
+            "mode": "MOCK" if getattr(client, "mock_mode", False) else "LIVE_API"
         }
     except Exception as e:
         details["gemini_ai"] = {

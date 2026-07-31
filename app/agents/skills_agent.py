@@ -23,7 +23,8 @@ class SkillsAgent:
 
         logger.info(f"SkillsAgent: Analyzing skill gaps and constructing learning path for '{title}'...")
 
-        if self.llm_client.mock_mode:
+        is_mock = getattr(self.llm_client, "mock_mode", False) or (getattr(self.llm_client, "mock_fallback", None) is not None)
+        if is_mock:
             logger.info("SkillsAgent: Simulating learning path locally (Mock).")
             return self._get_mock_plan(title)
 

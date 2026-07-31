@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily AI Career Report</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            max-width: 650px;
+            margin: 20px auto;
+            background-color: #1e293b;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+        }
+        .header {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: #ffffff;
+            padding: 32px 24px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .header p {
+            margin: 8px 0 0 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px 24px;
+        }
+        .summary-box {
+            background-color: #0f172a;
+            border-left: 4px solid #6366f1;
+            padding: 18px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: #cbd5e1;
+            border: 1px solid #334155;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .metric-card {
+            background-color: #1e293b;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #334155;
+        }
+        .metric-num { font-size: 18px; font-weight: 700; color: #6366f1; }
+        .metric-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; }
+
+        .priority-header {
+            font-size: 15px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 24px 0 14px 0;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #334155;
+        }
+        .job-card {
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 18px;
+            background-color: #0f172a;
+            margin-bottom: 18px;
+        }
+        .job-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #f8fafc;
+            margin: 0 0 4px 0;
+        }
+        .job-meta {
+            font-size: 13px;
+            color: #94a3b8;
+            margin: 0 0 10px 0;
+        }
+        .score-pill {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            font-weight: 700;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            float: right;
+        }
+        .badge-ready {
+            background-color: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-right: 6px;
+            font-weight: 600;
+        }
+        .job-summary {
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.5;
+            margin: 12px 0 8px 0;
+        }
+        .recommendation-box {
+            background-color: rgba(99, 102, 241, 0.1);
+            border-left: 3px solid #818cf8;
+            padding: 10px 12px;
+            border-radius: 4px;
+            font-size: 12.5px;
+            color: #e2e8f0;
+            margin-top: 10px;
+        }
+        .action-bar {
+            display: flex;
+            gap: 12px;
+            margin-top: 14px;
+            align-items: center;
+        }
+        .btn-apply {
+            display: inline-block;
+            font-size: 13px;
+            font-weight: 600;
+            background-color: #6366f1;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+        }
+        .btn-dashboard {
+            display: inline-block;
+            font-size: 13px;
+            font-weight: 600;
+            background-color: #334155;
+            color: #f8fafc;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+        }
+        .footer {
+            background-color: #0f172a;
+            padding: 24px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+            border-top: 1px solid #334155;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Daily AI Career Report</h1>
+            <p>Personalized Recommendations for July 29, 2026</p>
+        </div>
+        <div class="content">
+            <!-- New Jobs & Metrics Overview -->
+            <div class="summary-box">
+                <p style="margin: 0; font-weight: 600; color: #f8fafc;">Daily Executive Summary</p>
+                <div class="summary-grid">
+                    <div class="metric-card">
+                        <div class="metric-num">1</div>
+                        <div class="metric-label">New Jobs</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-num">1</div>
+                        <div class="metric-label">Top Matches</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-num">1</div>
+                        <div class="metric-label">Resumes Ready</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Matches -->
+            
+            <div class="priority-header" style="color: #34d399;">Top Recommendations & Matches</div>
+            
+            <div class="job-card">
+                <span class="score-pill">76% Match</span>
+                <h3 class="job-title">AI Engineer</h3>
+                <p class="job-meta"><strong>Unique Corp</strong> &bull; Bangalore</p>
+
+                <!-- Document Status Indicators -->
+                <div style="margin-bottom: 8px;">
+                    <span class="badge-ready">✓ Resume Ready</span>
+                    <span class="badge-ready">✓ Cover Letter Ready</span>
+                </div>
+
+                
+                <p class="job-summary"><strong>AI Match Evaluation:</strong> Strong alignment with candidate's Python, FastAPI, and GenAI skill set.</p>
+                
+
+                <!-- Career Recommendation -->
+                <div class="recommendation-box">
+                    <strong>Strategic Career Recommendation:</strong> High probability alignment. Tailored resume and cover letter drafted. Recommend applying immediately.
+                </div>
+
+                <div class="action-bar">
+                    <a href="https://example.com/unique-url" class="btn-apply" target="_blank">Apply Now &rarr;</a>
+                    <a href="http://127.0.0.1:8000/dashboard" class="btn-dashboard" target="_blank">Open Dashboard</a>
+                </div>
+            </div>
+            
+            
+
+            <!-- Additional Matches -->
+            
+
+            
+        </div>
+
+        <div class="footer">
+            <p>This daily report is generated automatically by your Agentic AI Career Assistant.</p>
+            <p><a href="http://127.0.0.1:8000/dashboard" style="color: #6366f1;">Control Panel & Dashboard</a></p>
+            <p>&copy; 2026 Agentic AI Career Assistant. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

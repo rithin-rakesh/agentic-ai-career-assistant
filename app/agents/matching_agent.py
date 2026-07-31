@@ -1,5 +1,5 @@
-from typing import List, Dict, Any
-from app.ai.llm_client import BaseLLM
+from typing import List, Dict, Any, Optional
+from app.ai.llm_client import BaseLLM, get_llm_client
 from app.ai.prompts import RAG_JOB_MATCH_SYSTEM_PROMPT, RAG_JOB_MATCH_USER_PROMPT
 from app.ai.parser import parse_and_validate_json
 from app.ai.job_matching_agent import JobMatchResult
@@ -8,11 +8,11 @@ from app.logger import logger
 class MatchingAgent:
     """
     MatchingAgent executes semantic evaluations comparing job descriptions
-    against retrieved context strings using the LLM recruiter logic.
+    against retrieved context strings using the LLM recruiter logic via Gemini.
     Supports node-level re-evaluations for jobs matching retry conditions.
     """
-    def __init__(self, llm_client: BaseLLM):
-        self.llm_client = llm_client
+    def __init__(self, llm_client: Optional[BaseLLM] = None):
+        self.llm_client = llm_client or get_llm_client()
 
     def match_jobs(self, filtered_jobs: List[Dict[str, Any]], retrieved_contexts: Dict[str, str], current_results: Dict[str, Dict[str, Any]], attempts: Dict[str, int]) -> Dict[str, Dict[str, Any]]:
         """
@@ -51,21 +51,23 @@ class MatchingAgent:
                     job_description=job_dict.get("description", "")
                 )
                 
-                # If this is a retry attempt, we can slightly alter system instruction or log details
                 system_prompt = RAG_JOB_MATCH_SYSTEM_PROMPT
                 if attempt_count > 0:
                     system_prompt += "\nNOTE: This is a double-check evaluation. Please pay extra attention to details and be decisive on score and confidence."
                 
-                # Execute LLM completion
+                # Execute LLM completion via BaseLLM (GeminiClient or MockLLM)
                 response_text = self.llm_client.generate(
                     system_prompt=system_prompt,
                     user_prompt=user_prompt,
                     response_format={"type": "json_object"}
                 )
                 
-                # Validate structures
+                # Validate structures with JobMatchResult schema
                 evaluation = parse_and_validate_json(response_text, JobMatchResult).model_dump()
                 results[url] = evaluation
+                
+                from app.monitoring.metrics import MATCH_SCORE_DISTRIBUTION
+                MATCH_SCORE_DISTRIBUTION.observe(evaluation.get("match_score", 0))
                 
                 logger.info(
                     f"MatchingAgent: Evaluated '{job_dict.get('title')}' at '{job_dict.get('company')}'. "

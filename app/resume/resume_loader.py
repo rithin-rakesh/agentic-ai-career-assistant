@@ -68,5 +68,9 @@ class ResumeLoader:
             logger.error("pypdf package is not installed. Unable to parse PDF files.", exc_info=True)
             raise RuntimeError("pypdf package missing. Install via pip install pypdf.")
         except Exception as e:
+            err_str = str(e).lower()
+            if "pdf" in err_str or "stream" in err_str or "header" in err_str or "EOF" in str(e) or "xref" in err_str:
+                logger.error(f"Corrupted or invalid PDF resume file '{file_path}': {e}", exc_info=True)
+                raise ValueError(f"Corrupted or unreadable PDF file: {e}")
             logger.error(f"Failed to parse PDF resume: {e}", exc_info=True)
             raise

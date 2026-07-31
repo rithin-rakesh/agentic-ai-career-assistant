@@ -11,14 +11,18 @@ from reportlab.lib.colors import HexColor
 
 from app.config import settings
 from app.resume.template_engine import DocumentTemplateConfig
+from app.resume.template_preservation import ResumeTemplatePreservation
 from app.logger import logger
 
 class ResumeDocumentGenerator:
     """
-    Generates customized resume documents in Markdown, DOCX, and PDF formats.
+    Generates customized resume documents in Markdown, DOCX, and PDF formats,
+    preserving the canonical master resume template styling and layout parameters.
     """
-    def __init__(self):
+    def __init__(self, master_template_path: str = None):
         self.config = DocumentTemplateConfig
+        self.master_template_path = master_template_path or settings.RESUME_TEMPLATE
+        self.template_metadata = ResumeTemplatePreservation.extract_template_metadata(self.master_template_path)
 
     def generate(self, resume_markdown: str, output_base_path: str) -> Dict[str, str]:
         """
@@ -119,10 +123,11 @@ class ResumeDocumentGenerator:
 
     def _compile_pdf(self, markdown_text: str, output_path: str) -> None:
         """
-        Parses Markdown blocks and compiles a PDF file via ReportLab platypus.
+        Parses Markdown blocks and compiles a PDF file via ReportLab platypus,
+        referencing the canonical master resume template styling properties.
         """
-        # Setup document template
-        margin = self.config.PDF_MARGIN
+        # Setup document template using extracted master margin
+        margin = self.template_metadata.get("pdf_margin", self.config.PDF_MARGIN)
         doc = SimpleDocTemplate(
             output_path,
             pagesize=letter,
@@ -134,25 +139,31 @@ class ResumeDocumentGenerator:
 
         styles = getSampleStyleSheet()
         
-        # Define paragraph styles with template configuration colors
+        primary_color = self.template_metadata.get("primary_color", self.config.PRIMARY_COLOR)
+        secondary_color = self.template_metadata.get("secondary_color", self.config.SECONDARY_COLOR)
+        text_color = self.template_metadata.get("text_color", self.config.TEXT_COLOR)
+        font_primary = self.template_metadata.get("font_primary", self.config.PRIMARY_FONT)
+        font_bold = self.template_metadata.get("font_bold", self.config.BOLD_FONT)
+        
+        # Define paragraph styles with master template visual properties
         title_style = ParagraphStyle(
             "DocTitle",
             parent=styles["Normal"],
-            fontName=self.config.BOLD_FONT,
-            fontSize=18,
+            fontName=font_bold,
+            fontSize=self.template_metadata.get("font_size_title", 18),
             leading=22,
-            textColor=HexColor(self.config.PRIMARY_COLOR),
-            alignment=1, # Center
+            textColor=HexColor(primary_color),
+            alignment=1 if self.template_metadata.get("alignment_header") == "center" else 0,
             spaceAfter=12
         )
         
         h1_style = ParagraphStyle(
             "DocH1",
             parent=styles["Normal"],
-            fontName=self.config.BOLD_FONT,
-            fontSize=13,
+            fontName=font_bold,
+            fontSize=self.template_metadata.get("font_size_h1", 13),
             leading=16,
-            textColor=HexColor(self.config.SECONDARY_COLOR),
+            textColor=HexColor(secondary_color),
             spaceBefore=10,
             spaceAfter=4,
             keepWithNext=True
@@ -161,10 +172,10 @@ class ResumeDocumentGenerator:
         h2_style = ParagraphStyle(
             "DocH2",
             parent=styles["Normal"],
-            fontName=self.config.BOLD_FONT,
-            fontSize=11,
+            fontName=font_bold,
+            fontSize=self.template_metadata.get("font_size_h2", 11),
             leading=14,
-            textColor=HexColor(self.config.TEXT_COLOR),
+            textColor=HexColor(text_color),
             spaceBefore=8,
             spaceAfter=4,
             keepWithNext=True
@@ -173,20 +184,20 @@ class ResumeDocumentGenerator:
         body_style = ParagraphStyle(
             "DocBody",
             parent=styles["Normal"],
-            fontName=self.config.PRIMARY_FONT,
-            fontSize=9.5,
+            fontName=font_primary,
+            fontSize=self.template_metadata.get("font_size_body", 9.5),
             leading=13,
-            textColor=HexColor(self.config.TEXT_COLOR),
+            textColor=HexColor(text_color),
             spaceAfter=3
         )
 
         bullet_style = ParagraphStyle(
             "DocBullet",
             parent=styles["Normal"],
-            fontName=self.config.PRIMARY_FONT,
-            fontSize=9.5,
+            fontName=font_primary,
+            fontSize=self.template_metadata.get("font_size_body", 9.5),
             leading=13,
-            textColor=HexColor(self.config.TEXT_COLOR),
+            textColor=HexColor(text_color),
             leftIndent=15,
             firstLineIndent=-10,
             spaceAfter=2

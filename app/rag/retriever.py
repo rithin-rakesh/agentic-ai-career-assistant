@@ -1,8 +1,8 @@
 import time
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from app.config import settings
 from app.rag.embedding_service import EmbeddingService
-from app.rag.vector_store import VectorStore
+from app.rag.vector_store import VectorStore, get_vector_store
 from app.logger import logger
 
 class Retriever:
@@ -10,9 +10,9 @@ class Retriever:
     Retriever class that embeds search queries (job descriptions)
     and fetches the most semantically relevant resume chunks from Qdrant.
     """
-    def __init__(self, embedding_service: EmbeddingService, vector_store: VectorStore):
-        self.embedding_service = embedding_service
-        self.vector_store = vector_store
+    def __init__(self, embedding_service: Optional[EmbeddingService] = None, vector_store: Optional[VectorStore] = None):
+        self.embedding_service = embedding_service or EmbeddingService()
+        self.vector_store = vector_store or get_vector_store()
         self.top_k = settings.TOP_K
         self.threshold = settings.SIMILARITY_THRESHOLD
 

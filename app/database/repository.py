@@ -1,5 +1,6 @@
 import json
-from typing import List, Optional
+from datetime import datetime, timezone, time
+from typing import List, Optional, Any, Dict
 from sqlalchemy import select, func, or_, text
 from sqlalchemy.orm import Session
 from app.database.database import engine as global_engine, get_db_session
@@ -69,7 +70,17 @@ class JobRepository:
                     "retrieved_chunk_ids": "TEXT NULL",
                     "retrieval_time": "FLOAT NULL",
                     "embedding_model": "VARCHAR NULL",
-                    "retrieval_score": "FLOAT NULL"
+                    "retrieval_score": "FLOAT NULL",
+                    # Phase 2.4 Normalization & Deduplication fields
+                    "remote_type": "VARCHAR NULL",
+                    "employment_type": "VARCHAR NULL",
+                    "salary_range": "VARCHAR NULL",
+                    "experience_level": "VARCHAR NULL",
+                    "apply_url": "VARCHAR NULL",
+                    "company_url": "VARCHAR NULL",
+                    "collected_timestamp": "DATETIME NULL",
+                    "content_hash": "VARCHAR NULL",
+                    "raw_metadata": "TEXT NULL"
                 }
                 
                 with self.session_provider() as session:
@@ -86,9 +97,15 @@ class JobRepository:
     def insert_job(self, job_in: JobCreate) -> Job:
         """
         Inserts a validated JobCreate schema into the database.
-        Raises DuplicateJobError if the job already exists (by URL or company+title+location).
+        Raises DuplicateJobError if the job already exists (by URL, content hash, or company+title).
         """
-        if self.job_exists(job_in.job_url, job_in.title, job_in.company, job_in.location):
+        if self.job_exists(
+            url=job_in.job_url,
+            title=job_in.title,
+            company=job_in.company,
+            location=job_in.location,
+            content_hash=getattr(job_in, "content_hash", None)
+        ):
             raise DuplicateJobError(
                 f"Job already exists in database: Title='{job_in.title}', Company='{job_in.company}', Location='{job_in.location}', URL='{job_in.job_url}'"
             )
@@ -100,7 +117,16 @@ class JobRepository:
             job_url=job_in.job_url,
             description=job_in.description,
             source=job_in.source,
-            date_posted=job_in.date_posted
+            date_posted=job_in.date_posted,
+            remote_type=getattr(job_in, "remote_type", None),
+            employment_type=getattr(job_in, "employment_type", None),
+            salary_range=getattr(job_in, "salary_range", None),
+            experience_level=getattr(job_in, "experience_level", None),
+            apply_url=getattr(job_in, "apply_url", None),
+            company_url=getattr(job_in, "company_url", None),
+            collected_timestamp=getattr(job_in, "collected_timestamp", None),
+            content_hash=getattr(job_in, "content_hash", None),
+            raw_metadata=getattr(job_in, "raw_metadata", None)
         )
         
         try:
@@ -116,28 +142,47 @@ class JobRepository:
             logger.error(f"Failed to insert job with URL {job_in.job_url}: {e}", exc_info=True)
             raise
 
-    def job_exists(self, url: str, title: Optional[str] = None, company: Optional[str] = None, location: Optional[str] = None) -> bool:
+    def job_exists(
+        self,
+        url: str,
+        title: Optional[str] = None,
+        company: Optional[str] = None,
+        location: Optional[str] = None,
+        content_hash: Optional[str] = None
+    ) -> bool:
         """
         Queries the database to check if a job already exists.
-        A job is a duplicate if:
-        - The job URL exists.
-        - OR a job with the same company, title, and location exists (compound duplicate).
+        Multi-stage deduplication check:
+        1. Exact job URL match.
+        2. SHA-256 content_hash match.
+        3. Normalized case & whitespace company + title match.
         """
+        from app.monitoring.metrics import DUPLICATE_JOBS_TOTAL
         try:
             with self.session_provider() as session:
                 # Check 1: Match by exact URL
                 url_query = select(JobModel.id).where(JobModel.job_url == url)
                 if session.execute(url_query).scalar_one_or_none() is not None:
+                    DUPLICATE_JOBS_TOTAL.labels(reason="exact_url").inc()
                     return True
-                
-                # Check 2: Match by compound keys company + title + location (case-sensitive as stored)
-                if title and company and location:
+
+                # Check 2: Match by SHA-256 content_hash
+                if content_hash:
+                    hash_query = select(JobModel.id).where(JobModel.content_hash == content_hash)
+                    if session.execute(hash_query).scalar_one_or_none() is not None:
+                        DUPLICATE_JOBS_TOTAL.labels(reason="content_hash").inc()
+                        return True
+
+                # Check 3: Normalized case & whitespace company + title match
+                if title and company:
+                    norm_title = title.lower().strip()
+                    norm_company = company.lower().strip()
                     compound_query = select(JobModel.id).where(
-                        JobModel.title == title,
-                        JobModel.company == company,
-                        JobModel.location == location
+                        func.lower(JobModel.title) == norm_title,
+                        func.lower(JobModel.company) == norm_company
                     )
                     if session.execute(compound_query).scalar_one_or_none() is not None:
+                        DUPLICATE_JOBS_TOTAL.labels(reason="normalized_title_company").inc()
                         return True
                         
                 return False
@@ -536,15 +581,31 @@ class JobRepository:
             logger.error(f"Failed to save career decision for Job ID {job_id}: {e}", exc_info=True)
             return None
 
-    def get_career_decision(self, job_id: int) -> Optional[Any]:
+    def get_career_decision(self, job_id: int) -> Optional[Dict[str, Any]]:
         """
-        Fetches strategic career strategies for a specific job ID.
+        Fetches strategic career strategies for a specific job ID as a detached dictionary.
         """
         from app.database.models import CareerDecisionModel
         try:
             with self.session_provider() as session:
                 query = select(CareerDecisionModel).where(CareerDecisionModel.job_id == job_id)
-                return session.execute(query).scalars().first()
+                decision = session.execute(query).scalars().first()
+                if decision:
+                    return {
+                        "recommendation": decision.recommendation,
+                        "confidence": decision.confidence,
+                        "priority": decision.priority,
+                        "estimated_interview_probability": decision.estimated_interview_probability,
+                        "career_growth": decision.career_growth,
+                        "salary_competitiveness": decision.salary_competitiveness,
+                        "learning_effort": decision.learning_effort,
+                        "resume_changes_required": decision.resume_changes_required,
+                        "cover_letter_required": decision.cover_letter_required,
+                        "estimated_application_time": decision.estimated_application_time,
+                        "reasoning": json.loads(decision.reasoning) if decision.reasoning else [],
+                        "missing_skills": json.loads(decision.missing_skills) if decision.missing_skills else []
+                    }
+                return None
         except Exception as e:
             logger.error(f"Failed to fetch career decision for Job ID {job_id}: {e}", exc_info=True)
             return None
@@ -597,7 +658,7 @@ class JobRepository:
         try:
             with self.session_provider() as session:
                 # Find today's metric record (truncate time to start of day)
-                today_start = datetime.combine(datetime.now(timezone.utc).date(), datetime.min.time(), tzinfo=timezone.utc)
+                today_start = datetime.combine(datetime.now(timezone.utc).date(), time.min).replace(tzinfo=timezone.utc)
                 query = select(LearningMetricModel).where(LearningMetricModel.metric_date >= today_start)
                 metric = session.execute(query).scalars().first()
                 

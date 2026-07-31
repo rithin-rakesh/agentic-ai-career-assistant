@@ -132,6 +132,81 @@ def test_email_service_smtp_retries(mock_smtp):
         assert "SMTP Host connection timeout error" in err_msg
         assert mock_sleep.call_count == 2  # Sleeps for attempt 1 (2s) and attempt 2 (4s)
 
+def test_email_service_mode_resolution(monkeypatch):
+    """
+    Verifies that EmailService correctly resolves delivery mode based on EMAIL_MODE and credentials.
+    """
+    # Case 1: Credentials present and EMAIL_MODE="SMTP" -> SMTP mode
+    monkeypatch.setattr(settings, "EMAIL_MODE", "SMTP")
+    monkeypatch.setattr(settings, "SMTP_USERNAME", "user@gmail.com")
+    monkeypatch.setattr(settings, "SMTP_PASSWORD", "secret_pass")
+    service1 = EmailService()
+    assert service1.mode == "SMTP"
+    assert service1.is_mock is False
+    assert service1.mock_reason is None
+
+    # Case 2: Credentials missing and EMAIL_MODE="SMTP" -> Auto MOCK fallback
+    monkeypatch.setattr(settings, "SMTP_USERNAME", None)
+    monkeypatch.setattr(settings, "SMTP_PASSWORD", None)
+    service2 = EmailService()
+    assert service2.mode == "MOCK"
+    assert service2.is_mock is True
+    assert "Missing SMTP credentials" in service2.mock_reason
+
+    # Case 3: Credentials present but EMAIL_MODE="MOCK" -> Explicit MOCK mode
+    monkeypatch.setattr(settings, "EMAIL_MODE", "MOCK")
+    monkeypatch.setattr(settings, "SMTP_USERNAME", "user@gmail.com")
+    monkeypatch.setattr(settings, "SMTP_PASSWORD", "secret_pass")
+    service3 = EmailService()
+    assert service3.mode == "MOCK"
+    assert service3.is_mock is True
+    assert "Explicitly configured EMAIL_MODE=MOCK" in service3.mock_reason
+
+@patch("smtplib.SMTP")
+def test_email_service_send_test_email_smtp(mock_smtp, monkeypatch):
+    """
+    Verifies that send_test_email dispatches via SMTP when mode is SMTP and credentials exist.
+    """
+    monkeypatch.setattr(settings, "EMAIL_MODE", "SMTP")
+    monkeypatch.setattr(settings, "SMTP_USERNAME", "sender@gmail.com")
+    monkeypatch.setattr(settings, "SMTP_PASSWORD", "app_pass")
+    
+    mock_instance = MagicMock()
+    mock_smtp.return_value = mock_instance
+    mock_instance.sendmail.return_value = {}
+
+    service = EmailService()
+    ok, msg, details = service.send_test_email(
+        to_email="recipient@example.com",
+        host="smtp.gmail.com",
+        port=587,
+        username="sender@gmail.com",
+        password="app_pass"
+    )
+
+    assert ok is True
+    assert "sent successfully" in msg
+    assert details["delivery_mode"] == "SMTP"
+    assert details["acceptance_status"] == "Accepted"
+    assert details["recipient"] == "recipient@example.com"
+    assert "timestamp" in details
+
+def test_email_service_send_test_email_mock(monkeypatch):
+    """
+    Verifies that send_test_email generates mock files and returns details when in MOCK mode.
+    """
+    monkeypatch.setattr(settings, "EMAIL_MODE", "MOCK")
+    monkeypatch.setattr(settings, "SMTP_USERNAME", "sender@gmail.com")
+    monkeypatch.setattr(settings, "SMTP_PASSWORD", "app_pass")
+
+    service = EmailService()
+    ok, msg, details = service.send_test_email(to_email="recipient@example.com")
+
+    assert ok is True
+    assert details["delivery_mode"] == "MOCK"
+    assert details["acceptance_status"] == "Mocked"
+    assert details["recipient"] == "recipient@example.com"
+
 def test_notification_agent_routing_and_duplicates(mock_db_provider):
     """
     Checks that NotificationAgent prioritizes and routes High/Medium/Low priority jobs,

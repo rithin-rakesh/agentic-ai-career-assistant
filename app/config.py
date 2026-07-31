@@ -13,14 +13,28 @@ class Settings(BaseSettings):
     """
     BASE_DIR: str = str(BASE_DIR)
     
-    # SQLite Database URL
+    # Environment & Security Configuration
+    ENVIRONMENT: str = "development"
+    SECRET_KEY: str = "dev_secret_key_change_in_production_32bytes_min"
+    JWT_SECRET: str = "agentic-ai-job-search-secret-2026"
+    SESSION_SECRET: str = "dev_session_secret_key_32bytes_min"
+    COOKIE_SECURE: bool = False
+    ALLOWED_ORIGINS: List[str] = ["http://localhost:8000", "http://localhost", "http://127.0.0.1:8000", "http://127.0.0.1"]
+
+    # Authentication Credentials
+    DASHBOARD_USERNAME: str = "admin"
+    DASHBOARD_PASSWORD: Optional[str] = None
+    
+    # SQLite / PostgreSQL Database URL
     DATABASE_URL: str = "sqlite:///data/jobs.db"
+    POSTGRES_PASSWORD: Optional[str] = None
     
     # Toggle for using a mock collector (returns simulated jobs) vs real requests
     MOCK_COLLECTOR: bool = True
     
     # Structured logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
     LOG_LEVEL: str = "INFO"
+    LOG_FORMAT: str = "json"
     
     # Collection interval for the scheduler (in hours)
     COLLECTION_INTERVAL_HOURS: int = 4
@@ -45,9 +59,16 @@ class Settings(BaseSettings):
         "LLM", "Generative AI"
     ]
     
-    # Day 3 AI Agent Configuration
+    # Phase 2.4 Smart Filtering Defaults
+    BLACKLISTED_COMPANIES: List[str] = []
+    IGNORED_KEYWORDS: List[str] = ["internship", "volunteer", "unpaid"]
+    MINIMUM_SALARY: int = 0
+    MAX_JOB_AGE_DAYS: int = 30
+    
+    # Day 3 & Phase 2.2 AI Agent & Gemini Configuration
+    GEMINI_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
-    MODEL_NAME: str = "gpt-4o-mini"
+    MODEL_NAME: str = "gemini-2.5-flash"
     MAX_TOKENS: int = 1000
     TEMPERATURE: float = 0.2
     REQUEST_TIMEOUT: int = 30
@@ -55,13 +76,12 @@ class Settings(BaseSettings):
     RESUME_PATH: str = "data/resume.md"
 
     # Day 4 Semantic Search & RAG Configuration
-    # Local path for in-memory embedded Qdrant database: "data/qdrant_db" or ":memory:"
-    # Live URL example: "http://localhost:6333"
     VECTOR_DB_URL: str = "data/qdrant_db"
     COLLECTION_NAME: str = "resume_chunks"
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
     TOP_K: int = 3
     SIMILARITY_THRESHOLD: float = 0.3
+    QDRANT_API_KEY: Optional[str] = None
 
     # Day 9 Adaptive Learning & Career Strategy Configs
     LEARNING_ENABLED: bool = True
@@ -75,12 +95,14 @@ class Settings(BaseSettings):
     CHECKPOINT_INTERVAL: int = 1
 
     # Day 6 SMTP Notification Configuration
+    EMAIL_MODE: str = "SMTP"  # Options: SMTP | MOCK
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
     SMTP_USERNAME: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
     FROM_EMAIL: str = "assistant@agenticjobsearch.com"
     TO_EMAIL: str = "candidate@example.com"
+    NOTIFICATION_EMAIL: Optional[str] = None
     DIGEST_TIME: str = "18:00"
     INSTANT_THRESHOLD: int = 85
     SMTP_RETRIES: int = 3
@@ -94,6 +116,7 @@ class Settings(BaseSettings):
 
     # Day 9 Production Infrastructure Configs
     REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_PASSWORD: Optional[str] = None
     SENTRY_DSN: Optional[str] = None
     PROMETHEUS_ENABLED: bool = True
     USE_CELERY: bool = False
@@ -104,6 +127,41 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore"
     )
+
+    def validate_production_config(self) -> None:
+        """
+        Validates environment configuration for production deployment.
+        Raises ValueError if production mode is active but insecure defaults or missing secrets are detected.
+        """
+        if self.ENVIRONMENT.lower() != "production":
+            return
+
+        insecure_secrets = {
+            "dev_secret_key_change_in_production_32bytes_min",
+            "agentic-ai-job-search-secret-2026",
+            "dev_session_secret_key_32bytes_min",
+            "change_me",
+            "admin",
+            "secret",
+            "password"
+        }
+
+        errors = []
+        if self.SECRET_KEY in insecure_secrets:
+            errors.append("SECRET_KEY is using a default insecure development value.")
+
+        if self.JWT_SECRET in insecure_secrets:
+            errors.append("JWT_SECRET is using a default insecure development value.")
+
+        if len(self.SECRET_KEY) < 32:
+            errors.append("SECRET_KEY must be at least 32 characters long.")
+
+        if len(self.JWT_SECRET) < 32:
+            errors.append("JWT_SECRET must be at least 32 characters long.")
+
+        if errors:
+            err_msg = "Production Configuration Validation Failed:\n- " + "\n- ".join(errors)
+            raise ValueError(err_msg)
 
     @property
     def db_path_absolute(self) -> str:
@@ -130,7 +188,6 @@ class Settings(BaseSettings):
         url = self.VECTOR_DB_URL
         if url.startswith("http://") or url.startswith("https://") or url == ":memory:":
             return url
-        # If it is a relative path, resolve it relative to BASE_DIR
         if not os.path.isabs(url):
             abs_path = os.path.abspath(os.path.join(BASE_DIR, url))
             os.makedirs(abs_path, exist_ok=True)

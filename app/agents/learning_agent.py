@@ -22,13 +22,20 @@ class LearningAgent:
         logger.info("LearningAgent: Commencing dynamic feedback learning analysis cycle.")
         
         # 1. Fetch recent feedback events
+        event_dicts = []
         with self.repository.session_provider() as session:
             from app.database.models import FeedbackEventModel
             from sqlalchemy import select
             query = select(FeedbackEventModel).order_by(FeedbackEventModel.created_at.desc()).limit(150)
-            events = session.execute(query).scalars().all()
+            db_events = session.execute(query).scalars().all()
+            for e in db_events:
+                event_dicts.append({
+                    "event_type": e.event_type,
+                    "job_id": e.job_id,
+                    "payload": e.payload
+                })
             
-        if not events:
+        if not event_dicts:
             logger.info("LearningAgent: No feedback events found in database. Learning skipped.")
             return {"status": "skipped", "reason": "No interaction events recorded."}
 
@@ -51,18 +58,19 @@ class LearningAgent:
         }
 
         # 3. Analyze each event
-        for event in events:
-            event_type = event.event_type
+        for event in event_dicts:
+            event_type = event.get("event_type")
             weight = reward_matrix.get(event_type, 0.0)
             if weight == 0.0:
                 continue
 
             # Fetch associated job details
             db_job = None
-            if event.job_id:
+            job_id = event.get("job_id")
+            if job_id:
                 with self.repository.session_provider() as session:
                     from app.database.models import JobModel
-                    db_job = session.get(JobModel, event.job_id)
+                    db_job = session.get(JobModel, job_id)
             
             if not db_job:
                 continue

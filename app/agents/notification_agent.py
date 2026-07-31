@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from app.config import settings
+from app.ai.llm_client import BaseLLM, MockLLM, get_llm_client
 from app.notifications.email_service import EmailService
 from app.notifications.template_engine import TemplateEngine
 from app.notifications.notification_repository import NotificationRepository
@@ -9,16 +10,39 @@ from app.logger import logger
 class NotificationAgent:
     """
     Evaluates newly ranked jobs to determine immediate delivery alerts or digest queuing.
+    Enhances instant alert titles and summaries using Gemini without altering routing logic.
     Filters out duplicate listings by querying historical sqlite logs via NotificationRepository.
     Rules:
       - High Priority: Triggers responsive HTML email instantly.
       - Medium Priority: Logged as 'queued' for standard Daily Digest compilation.
       - Low Priority: Logged as 'skipped' to conserve notification bandwidth.
     """
-    def __init__(self, email_service: EmailService = None, template_engine: TemplateEngine = None, repository: NotificationRepository = None):
+    def __init__(
+        self,
+        email_service: EmailService = None,
+        template_engine: TemplateEngine = None,
+        repository: NotificationRepository = None,
+        llm_client: Optional[BaseLLM] = None
+    ):
         self.email_service = email_service or EmailService()
         self.template_engine = template_engine or TemplateEngine()
         self.repository = repository or NotificationRepository()
+        self.llm_client = llm_client or get_llm_client()
+
+    def enhance_alert_summary(self, job_dict: Dict[str, Any]) -> str:
+        """
+        Uses Gemini to generate an engaging single-sentence alert summary for high priority emails.
+        """
+        if isinstance(self.llm_client, MockLLM) or getattr(self.llm_client, "mock_fallback", None) is not None:
+            return job_dict.get("summary") or f"High match ({job_dict.get('match_score', 0)}%) for {job_dict.get('title')} at {job_dict.get('company')}."
+
+        system_prompt = "You are a professional career alert writer. Write a concise, 1-sentence highlight for an urgent job match."
+        user_prompt = f"Title: {job_dict.get('title')}\nCompany: {job_dict.get('company')}\nMatch Score: {job_dict.get('match_score')}"
+
+        try:
+            return self.llm_client.generate(system_prompt, user_prompt)
+        except Exception:
+            return job_dict.get("summary") or f"High match ({job_dict.get('match_score', 0)}%) for {job_dict.get('title')} at {job_dict.get('company')}."
 
     def evaluate_and_notify(self, ranked_jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
@@ -56,9 +80,12 @@ class NotificationAgent:
                 logger.info(f"NotificationAgent: Routing instant alert for High Priority job '{title}' at '{company}' (Score: {score}%)")
                 
                 try:
-                    # Render responsive HTML content using Jinja2 engine
+                    # Enrich alert with Gemini summary
+                    enhanced_job = dict(job_dict)
+                    enhanced_job["ai_summary"] = self.enhance_alert_summary(job_dict)
+
                     subject = f"Instant Job Alert: {title} at {company} ({score}% Match)"
-                    html_content = self.template_engine.render("instant_alert.html", {"job": job_dict})
+                    html_content = self.template_engine.render("instant_alert.html", {"job": enhanced_job})
                     
                     # Dispatch via EmailService
                     success, attempts, error_msg = self.email_service.send_html_email(subject, html_content)
@@ -104,7 +131,7 @@ class NotificationAgent:
                     "status": "skipped",
                     "sent_at": None,
                     "retry_count": 0,
-                    "error_message": "Low priority exclusion"
+                    "error_message": "Skipped due to Low priority score"
                 })
 
         return records

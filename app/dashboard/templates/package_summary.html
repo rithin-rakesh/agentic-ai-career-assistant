@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ app.position if app else 'Application Package' }} | Application Package Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --secondary: #a855f7;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem;
+            line-height: 1.5;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+        }
+
+        .header-title h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links { display: flex; gap: 1rem; }
+        .nav-links a {
+            padding: 0.6rem 1.2rem;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        .nav-links a:hover { border-color: var(--primary); color: var(--primary); }
+
+        .banner-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.75rem 2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .badge-score { background-color: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid var(--success); }
+        .badge-status { background-color: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid var(--primary); }
+
+        /* Action Toolbar */
+        .toolbar {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem 1.75rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .btn-apply {
+            padding: 0.75rem 1.75rem;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            transition: all 0.2s ease;
+        }
+        .btn-apply:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4); }
+
+        .btn-dl {
+            padding: 0.6rem 1rem;
+            background-color: #334155;
+            color: #ffffff;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.2s ease;
+        }
+        .btn-dl:hover { background-color: var(--primary); border-color: var(--primary); }
+
+        .status-btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .btn-status-action {
+            padding: 0.45rem 0.9rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+        }
+        .btn-applied { background-color: var(--info); color: #ffffff; }
+        .btn-interview { background-color: var(--secondary); color: #ffffff; }
+        .btn-offer { background-color: var(--success); color: #ffffff; }
+        .btn-rejected { background-color: var(--danger); color: #ffffff; }
+        .btn-regen { background-color: var(--warning); color: #ffffff; }
+
+        /* Detail Grids */
+        .package-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .package-grid { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+
+        .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .meta-table td {
+            padding: 0.6rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9rem;
+        }
+        .meta-table td.label { color: var(--text-muted); font-weight: 600; width: 45%; }
+        .meta-table td.value { font-weight: 500; color: var(--text-main); }
+
+        .preview-block {
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+            font-family: monospace;
+            font-size: 0.85rem;
+            max-height: 320px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            color: #cbd5e1;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-title">
+            <h1>Application Package Center</h1>
+            <p>Production Review & Submission Hub</p>
+        </div>
+        <div class="nav-links">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/analytics">Analytics</a>
+            <a href="/settings">Settings</a>
+        </div>
+    </header>
+
+    {% if error %}
+    <div style="background-color: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: #fca5a5; padding: 1.5rem; border-radius: 10px; margin-bottom: 2rem;">
+        <h3>Notice</h3>
+        <p>{{ error }}</p>
+        <a href="/dashboard" style="color: #ffffff; text-decoration: underline; margin-top: 0.5rem; display: inline-block;">Return to Dashboard</a>
+    </div>
+    {% else %}
+
+    <!-- Top Summary Banner -->
+    <div class="banner-card">
+        <div>
+            <h2 style="font-size: 1.6rem; font-weight: 700; margin-bottom: 0.25rem;">{{ app.position }}</h2>
+            <p style="color: var(--text-muted); font-size: 1.05rem;">
+                <strong>{{ app.company }}</strong> &bull; {{ app.location }} &bull; Source: <span style="color: var(--primary)">{{ app.source }}</span>
+            </p>
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <span class="badge badge-score">Match Score: {{ app.match_score }}%</span>
+            <span class="badge badge-status" id="statusBadge">Status: {{ app.status }}</span>
+        </div>
+    </div>
+
+    <!-- Primary Action Toolbar -->
+    <div class="toolbar">
+        <div>
+            <a href="{{ app.apply_url }}" target="_blank" rel="noopener noreferrer" class="btn-apply" id="applyNowBtn">
+                Apply Now ↗
+            </a>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="/api/applications/{{ app.id }}/download/resume/pdf" class="btn-dl" download>📄 Resume (PDF)</a>
+            <a href="/api/applications/{{ app.id }}/download/resume/md" class="btn-dl" download>📝 Resume (MD)</a>
+            <a href="/api/applications/{{ app.id }}/download/cover-letter/pdf" class="btn-dl" download>✉️ Cover Letter (PDF)</a>
+            <a href="/api/applications/{{ app.id }}/download/cover-letter/md" class="btn-dl" download>✉️ Cover Letter (MD)</a>
+        </div>
+
+        <div class="status-btn-group">
+            <button onclick="updateStatus('Applied')" class="btn-status-action btn-applied">Mark Applied</button>
+            <button onclick="updateStatus('Interview')" class="btn-status-action btn-interview">Mark Interview</button>
+            <button onclick="updateStatus('Offer')" class="btn-status-action btn-offer">Mark Offer</button>
+            <button onclick="updateStatus('Rejected')" class="btn-status-action btn-rejected">Mark Rejected</button>
+            <button onclick="updateStatus('Regenerate')" class="btn-status-action btn-regen">Regenerate</button>
+        </div>
+    </div>
+
+    <!-- Main Content Details -->
+    <div class="package-grid">
+        <!-- Left Col: Job & AI Metadata -->
+        <div>
+            <div class="panel">
+                <div class="panel-title">Application Intelligence & Metadata</div>
+                <table class="meta-table">
+                    <tr><td class="label">Company</td><td class="value">{{ app.company }}</td></tr>
+                    <tr><td class="label">Position Title</td><td class="value">{{ app.position }}</td></tr>
+                    <tr><td class="label">Location</td><td class="value">{{ app.location }}</td></tr>
+                    <tr><td class="label">Salary Range</td><td class="value">{{ app.salary_range }}</td></tr>
+                    <tr><td class="label">Employment Type</td><td class="value">{{ app.employment_type }}</td></tr>
+                    <tr><td class="label">Job Source</td><td class="value">{{ app.source }}</td></tr>
+                    <tr><td class="label">Priority Rank</td><td class="value">{{ app.priority }}</td></tr>
+                    <tr><td class="label">Match Score</td><td class="value" style="color: var(--success); font-weight: 700;">{{ app.match_score }}%</td></tr>
+                    <tr><td class="label">Interview Probability</td><td class="value" style="color: var(--secondary); font-weight: 700;">{{ app.estimated_interview_probability }}</td></tr>
+                    <tr><td class="label">AI Recommendation</td><td class="value">{{ app.recommendation }}</td></tr>
+                    <tr><td class="label">Learning Effort</td><td class="value">{{ app.learning_effort }}</td></tr>
+                    <tr><td class="label">Generation Time</td><td class="value">{{ app.last_updated }}</td></tr>
+                </table>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Matching Strengths & Gaps</div>
+                <div style="margin-bottom: 1rem;">
+                    <div style="font-size: 0.85rem; font-weight: 600; color: #34d399; margin-bottom: 0.5rem;">Key Strengths</div>
+                    <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #a7f3d0;">
+                        {% for s in app.strengths %}
+                        <li>{{ s }}</li>
+                        {% else %}
+                        <li>Matched skill profiles align with core requirements.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div>
+                    <div style="font-size: 0.85rem; font-weight: 600; color: #fca5a5; margin-bottom: 0.5rem;">Skill Gaps & Missing Skills</div>
+                    <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: #fecaca;">
+                        {% for m in app.missing_skills %}
+                        <li>{{ m }}</li>
+                        {% else %}
+                        <li>No critical technical skill gaps identified.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Col: Document Previews -->
+        <div>
+            <div class="panel">
+                <div class="panel-title">Tailored Resume Document Preview</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-muted);">
+                    <span>File: {{ app.resume_path or 'Standard Markdown' }}</span>
+                </div>
+                <div class="preview-block">{{ resume_preview or 'No tailored resume compiled yet.' }}</div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Customized Cover Letter Preview</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-muted);">
+                    <span>File: {{ app.cover_letter_path or 'Standard Markdown' }}</span>
+                </div>
+                <div class="preview-block">{{ cover_letter_preview or 'No tailored cover letter compiled yet.' }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        async function updateStatus(newStatus) {
+            if (!confirm(`Are you sure you want to set application status to '${newStatus}'?`)) {
+                return;
+            }
+            try {
+                const response = await fetch('/api/applications/{{ app.id if app else 0 }}', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (response.ok) {
+                    alert(`Application updated to '${newStatus}'.`);
+                    window.location.reload();
+                } else {
+                    const err = await response.json();
+                    alert(`Error: ${err.detail || 'Failed to update status.'}`);
+                }
+            } catch (e) {
+                alert(`Network error: ${e}`);
+            }
+        }
+    </script>
+</body>
+</html>

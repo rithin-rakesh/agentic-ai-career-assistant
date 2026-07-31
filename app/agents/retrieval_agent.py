@@ -1,6 +1,7 @@
 import time
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from app.rag.retriever import Retriever
+from app.ai.llm_client import BaseLLM, get_llm_client
 from app.logger import logger
 
 class RetrievalAgent:
@@ -9,10 +10,12 @@ class RetrievalAgent:
     - Embeds individual job descriptions.
     - Searches Qdrant collection for nearest resume section chunks.
     - Resolves semantic text strings to feed directly into the matching prompt.
+    - Uses Gemini via BaseLLM to generate structured retrieval summaries when required.
     - Logs retrieval metrics (ids, times, scores) in metadata for persistence.
     """
-    def __init__(self, retriever: Retriever):
+    def __init__(self, retriever: Retriever, llm_client: Optional[BaseLLM] = None):
         self.retriever = retriever
+        self.llm_client = llm_client or get_llm_client()
 
     def retrieve(self, filtered_jobs: List[Dict[str, Any]]) -> Tuple[Dict[str, str], Dict[str, Dict[str, Any]]]:
         """

@@ -126,7 +126,7 @@ def test_job_matching_agent_evaluation():
     assert evaluation["strengths"] == ["Python", "SQLAlchemy"]
     assert evaluation["missing_skills"] == ["Docker"]
 
-def test_ai_matching_service_integration(mock_db):
+def test_ai_matching_service_integration(mock_db, monkeypatch):
     """
     Checks the orchestration of AIMatchingService: pulling unevaluated database jobs,
     scoring them using the matching agent, and writing evaluation columns back to SQLite.
@@ -172,7 +172,7 @@ def test_ai_matching_service_integration(mock_db):
     
     # Mock loader read to return fake raw text
     from app.resume.resume_loader import ResumeLoader
-    ResumeLoader.load_resume = MagicMock(return_value="Fake raw resume text")
+    monkeypatch.setattr(ResumeLoader, "load_resume", MagicMock(return_value="Fake raw resume text"))
     
     stats = service.evaluate_pending_jobs()
     

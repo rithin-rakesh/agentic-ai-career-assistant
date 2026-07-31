@@ -1,15 +1,15 @@
-from typing import Dict, Any
-from app.ai.llm_client import OpenAIClient
+from typing import Dict, Any, Optional
+from app.ai.llm_client import BaseLLM, MockLLM, get_llm_client
 from app.logger import logger
 
 class ResumeAgent:
     """
-    Tailors a candidate resume markdown to target a specific job description.
+    Tailors a candidate resume markdown to target a specific job description using Gemini / BaseLLM.
     ATS-optimizes wording, reorders sections, and highlights matching skills
     without fabricating any factual experience, titles, or dates.
     """
-    def __init__(self, llm_client: OpenAIClient = None):
-        self.llm_client = llm_client or OpenAIClient()
+    def __init__(self, llm_client: Optional[BaseLLM] = None):
+        self.llm_client = llm_client or get_llm_client()
 
     def tailor_resume(self, original_resume: str, job_dict: Dict[str, Any]) -> str:
         """
@@ -21,7 +21,7 @@ class ResumeAgent:
 
         logger.info(f"ResumeAgent: Tailoring resume for '{title}' at '{company}'...")
 
-        if self.llm_client.mock_mode:
+        if isinstance(self.llm_client, MockLLM) or getattr(self.llm_client, "mock_fallback", None) is not None:
             logger.info("ResumeAgent: Simulating tailored resume locally (Mock).")
             return self._get_mock_resume(original_resume, title, company)
 
@@ -58,7 +58,6 @@ class ResumeAgent:
         """
         Fallback mock tailored resume incorporating job keywords.
         """
-        # Read candidate name/headers from original resume if possible
         header = "# Alex Candidate\n\nEmail: alex@example.com | Phone: +1-555-0199 | Location: Remote"
         for line in original_resume.splitlines():
             if line.strip().startswith("# "):

@@ -14,6 +14,9 @@ data/jobs.db
 data/qdrant_db
 data/sent_emails
 data/applications
+data/generated_resumes
+data/generated_cover_letters
+data/master_resumes
 .env
 .env.local
 .vscode

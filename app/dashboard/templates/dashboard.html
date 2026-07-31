@@ -439,16 +439,23 @@
                 </div>
                 <div class="scannable-list">
                     {% for app in applications %}
-                    <div class="list-item" style="padding: 0.75rem 1rem;">
+                    <div class="list-item" style="padding: 0.85rem 1rem;">
                         <div class="item-details">
                             <h4 style="font-size: 0.9rem;">{{ app.position }}</h4>
-                            <p style="font-size: 0.8rem;">{{ app.company }}</p>
+                            <p style="font-size: 0.8rem; color: var(--text-muted);">{{ app.company }}</p>
                         </div>
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;">
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem;">
                             <span class="item-badge {% if app.status == 'Pending Approval' %}badge-pending{% elif app.status == 'Draft' %}badge-draft{% else %}badge-approved{% endif %}" style="font-size: 0.7rem;">
                                 {{ app.status }}
                             </span>
-                            <a href="/jobs/{{ app.job_id }}" class="btn-view" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Review</a>
+                            <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                                <a href="/applications/{{ app.id }}" class="btn-view" style="padding: 0.25rem 0.4rem; font-size: 0.75rem; background-color: var(--primary); color: #ffffff;">Package</a>
+                                <a href="/jobs/{{ app.job_id }}" class="btn-view" style="padding: 0.25rem 0.4rem; font-size: 0.75rem;">Review</a>
+                                {% if app.status != 'Pending Approval' %}
+                                <a href="/api/applications/{{ app.id }}/download/resume/pdf" class="btn-view" style="padding: 0.25rem 0.4rem; font-size: 0.75rem;" title="Download Resume PDF">📄 Res</a>
+                                <a href="/api/applications/{{ app.id }}/download/cover-letter/pdf" class="btn-view" style="padding: 0.25rem 0.4rem; font-size: 0.75rem;" title="Download Cover Letter PDF">✉️ CL</a>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                     {% else %}

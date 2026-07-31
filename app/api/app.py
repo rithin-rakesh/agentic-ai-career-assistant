@@ -32,13 +32,40 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Add Monitoring & Correlation ID Middleware
+# Add CORS & Security Middleware
+from fastapi.middleware.cors import CORSMiddleware
 from app.monitoring.middleware import CorrelationIDMiddleware
 from app.monitoring.metrics import metrics_response
 from app.monitoring.sentry import init_sentry
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
 app.add_middleware(CorrelationIDMiddleware)
 init_sentry()
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https:; "
+        "connect-src 'self';"
+    )
+    if settings.COOKIE_SECURE or request.url.scheme == "https":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
 @app.get("/metrics", include_in_schema=False)
 def get_prometheus_metrics():
@@ -46,6 +73,48 @@ def get_prometheus_metrics():
 
 # Configure Jinja2 templates directory
 templates = Jinja2Templates(directory=os.path.join(settings.BASE_DIR, "app", "dashboard", "templates"))
+
+# --- Global API Exception Handlers ---
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+@app.exception_handler(Exception)
+async def global_api_exception_handler(request: Request, exc: Exception):
+    err_msg = str(exc).encode("utf-8", errors="replace").decode("utf-8")
+    logger.error(f"Unhandled exception on {request.url.path}: {err_msg}", exc_info=True)
+    if request.url.path.startswith("/api/"):
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "status": "error",
+                "stage": "Internal Error",
+                "detail": f"Internal Server Error: {err_msg}",
+                "message": "An internal error occurred while processing your request."
+            }
+        )
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": err_msg}
+    )
+
+@app.exception_handler(StarletteHTTPException)
+async def http_api_exception_handler(request: Request, exc: StarletteHTTPException):
+    detail_str = str(exc.detail).encode("utf-8", errors="replace").decode("utf-8")
+    if request.url.path.startswith("/api/"):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "status": "error",
+                "stage": "API Request Error",
+                "detail": detail_str,
+                "message": detail_str
+            }
+        )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": detail_str}
+    )
 
 # --- 1. Mount API routers ---
 from app.api.routes.jobs import router as jobs_router
@@ -90,7 +159,9 @@ def login_submit(
     """
     Validates login credentials, writes JWT access token cookie, and redirects.
     """
-    if username != DEFAULT_USERNAME or not verify_password(password, DEFAULT_PASSWORD_HASH):
+    clean_user = username.strip() if username else ""
+    clean_pw = password.strip() if password else ""
+    if clean_user.lower() != DEFAULT_USERNAME.lower() or not verify_password(clean_pw, DEFAULT_PASSWORD_HASH):
         return templates.TemplateResponse(
             request=request,
             name="login.html", 
@@ -98,7 +169,7 @@ def login_submit(
         )
         
     # Generate JWT token
-    access_token = create_access_token(data={"sub": username})
+    access_token = create_access_token(data={"sub": DEFAULT_USERNAME})
     
     response = RedirectResponse(url="/dashboard", status_code=303)
     # Store token in cookie
@@ -107,7 +178,8 @@ def login_submit(
         value=access_token,
         httponly=True,
         max_age=120 * 60, # 2 hours
-        samesite="lax"
+        samesite="lax",
+        secure=settings.COOKIE_SECURE
     )
     return response
 
@@ -117,7 +189,13 @@ def logout():
     Clears session tokens and redirects to login.
     """
     response = RedirectResponse(url="/login", status_code=303)
-    response.delete_cookie("access_token")
+    response.delete_cookie(
+        key="access_token",
+        path="/",
+        httponly=True,
+        samesite="lax",
+        secure=settings.COOKIE_SECURE
+    )
     return response
 
 @app.get("/", response_class=HTMLResponse)
@@ -309,6 +387,99 @@ def get_job_detail_html(
             detail=f"Failed to fetch job details page: {e}"
         )
 
+@app.get("/applications/{app_id}", response_class=HTMLResponse)
+def get_application_package_html(
+    request: Request,
+    app_id: int,
+    repo: JobRepository = Depends(JobRepository)
+):
+    """
+    Renders the production Application Package Center page for a specific application package.
+    """
+    token = request.cookies.get("access_token")
+    if not token:
+        return RedirectResponse(url="/login", status_code=303)
+        
+    from app.auth.authentication import verify_access_token
+    username = verify_access_token(token)
+    if not username:
+        return RedirectResponse(url="/login", status_code=303)
+
+    try:
+        with repo.session_provider() as session:
+            from sqlalchemy import select
+            from app.database.models import ApplicationModel, JobModel, CareerDecisionModel
+            db_app = session.get(ApplicationModel, app_id)
+            if not db_app:
+                return templates.TemplateResponse(request=request, name="package_summary.html", context={"app": None, "error": f"Application ID {app_id} not found."})
+            
+            db_job = db_app.job
+            if not db_job:
+                return templates.TemplateResponse(request=request, name="package_summary.html", context={"app": None, "error": "Associated job details missing."})
+
+            cd_query = select(CareerDecisionModel).where(CareerDecisionModel.job_id == db_job.id)
+            db_cd = session.execute(cd_query).scalars().first()
+
+            strengths = json.loads(db_job.strengths) if db_job.strengths else []
+            missing_skills = json.loads(db_job.missing_skills) if db_job.missing_skills else []
+
+            resume_preview = ""
+            if db_app.resume_path:
+                base_p = os.path.splitext(db_app.resume_path)[0] + ".md"
+                if os.path.exists(base_p):
+                    with open(base_p, "r", encoding="utf-8", errors="replace") as f:
+                        resume_preview = f.read(3000)
+
+            cover_letter_preview = ""
+            if db_app.cover_letter_path:
+                base_p = os.path.splitext(db_app.cover_letter_path)[0] + ".md"
+                if os.path.exists(base_p):
+                    with open(base_p, "r", encoding="utf-8", errors="replace") as f:
+                        cover_letter_preview = f.read(3000)
+
+            app_package = {
+                "id": db_app.id,
+                "job_id": db_job.id,
+                "company": db_app.company,
+                "position": db_app.position,
+                "status": db_app.status,
+                "resume_path": db_app.resume_path,
+                "cover_letter_path": db_app.cover_letter_path,
+                "created_at": db_app.created_at.strftime("%Y-%m-%d %H:%M:%S") if db_app.created_at else "",
+                "last_updated": db_app.last_updated.strftime("%Y-%m-%d %H:%M:%S") if db_app.last_updated else "",
+                "location": db_job.location,
+                "job_url": db_job.job_url,
+                "apply_url": db_job.apply_url or db_job.job_url,
+                "source": db_job.source,
+                "employment_type": db_job.employment_type or "Full-time",
+                "salary_range": db_job.salary_range or "Not specified",
+                "match_score": db_job.match_score or 0,
+                "priority": db_job.priority or "Medium",
+                "strengths": strengths,
+                "missing_skills": missing_skills,
+                "summary": db_job.summary,
+                "description": db_job.description,
+                "recommendation": db_cd.recommendation if db_cd else ("Apply" if (db_job.match_score or 0) >= 70 else "Review"),
+                "estimated_interview_probability": db_cd.estimated_interview_probability if db_cd else f"{min(95, max(40, db_job.match_score or 50))}%",
+                "career_growth": db_cd.career_growth if db_cd else "High",
+                "salary_competitiveness": db_cd.salary_competitiveness if db_cd else "Competitive",
+                "learning_effort": db_job.learning_effort or "Medium"
+            }
+
+            return templates.TemplateResponse(
+                request=request,
+                name="package_summary.html",
+                context={
+                    "app": app_package,
+                    "resume_preview": resume_preview,
+                    "cover_letter_preview": cover_letter_preview,
+                    "error": None
+                }
+            )
+    except Exception as e:
+        logger.error(f"Failed to load package summary page for app ID {app_id}: {e}", exc_info=True)
+        return templates.TemplateResponse(request=request, name="package_summary.html", context={"app": None, "error": f"Internal Error: {e}"})
+
 @app.get("/settings", response_class=HTMLResponse)
 def get_settings_html(
     request: Request,
@@ -369,9 +540,13 @@ def get_system_status_html(
 def app_startup():
     """
     FastAPI startup routine:
+    - Validates production environment configuration.
     - Runs DB schema creations.
     - Initializes the APScheduler BackgroundScheduler daemon to sync jobs.
     """
+    # 0. Validate production settings
+    settings.validate_production_config()
+
     # 1. Setup repository and migrate tables
     repo = JobRepository()
     repo.create_database()

@@ -219,7 +219,7 @@ def test_rag_matching_service_integration(test_db_session, monkeypatch):
     service._ensure_default_resume = MagicMock()
     
     from app.resume.resume_loader import ResumeLoader
-    ResumeLoader.load_resume = MagicMock(return_value="## Technical Skills\n- Python, Git, SQL")
+    monkeypatch.setattr(ResumeLoader, "load_resume", MagicMock(return_value="## Technical Skills\n- Python, Git, SQL"))
     
     # 3. Execute matching sync
     stats = service.evaluate_pending_jobs()

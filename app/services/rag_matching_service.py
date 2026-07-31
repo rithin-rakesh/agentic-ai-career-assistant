@@ -4,10 +4,10 @@ from app.config import settings
 from app.database.repository import JobRepository
 from app.resume.resume_loader import ResumeLoader
 from app.rag.embedding_service import EmbeddingService
-from app.rag.vector_store import VectorStore
+from app.rag.vector_store import VectorStore, get_vector_store
 from app.rag.indexing import ResumeIndexingPipeline
 from app.rag.retriever import Retriever
-from app.ai.llm_client import BaseLLM, OpenAIClient
+from app.ai.llm_client import BaseLLM, get_llm_client
 from app.ai.prompts import RAG_JOB_MATCH_SYSTEM_PROMPT, RAG_JOB_MATCH_USER_PROMPT
 from app.ai.parser import parse_and_validate_json
 from app.ai.job_matching_agent import JobMatchResult
@@ -21,9 +21,9 @@ class RAGMatchingService:
     """
     def __init__(self, repository: JobRepository, llm_client: Optional[BaseLLM] = None, embedding_service: Optional[EmbeddingService] = None, vector_store: Optional[VectorStore] = None):
         self.repository = repository
-        self.llm_client = llm_client or OpenAIClient()
+        self.llm_client = llm_client or get_llm_client()
         self.embedding_service = embedding_service or EmbeddingService()
-        self.vector_store = vector_store or VectorStore()
+        self.vector_store = vector_store or get_vector_store()
         
         # In-memory pipeline triggers
         self.indexing_pipeline = ResumeIndexingPipeline(

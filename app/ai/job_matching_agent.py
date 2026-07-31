@@ -21,6 +21,12 @@ class JobMatchResult(BaseModel):
     missing_skills: List[str] = Field(default_factory=list, description="Skills/experiences missing from candidate's profile")
     learning_effort: str = Field(..., description="Estimated effort to close gaps: Low, Medium, or High")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence of the agent in this matching result")
+    
+    # Phase 2.4 Extended Structured Evaluation Fields
+    resume_strength: int = Field(80, ge=0, le=100, description="Evaluated strength of candidate resume for this role")
+    career_growth_score: int = Field(75, ge=0, le=100, description="Career growth potential score out of 100")
+    estimated_interview_probability: int = Field(70, ge=0, le=100, description="Estimated interview probability percentage")
+    learning_recommendation: str = Field("Focus on core missing skills", description="Actionable learning advice")
 
 class JobMatchingAgent:
     """
