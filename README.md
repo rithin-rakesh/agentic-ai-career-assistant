@@ -1,6 +1,6 @@
-# Agentic AI Career Assistant — Version 1.0 Live Release Candidate
+# Agentic AI Career Assistant
 
-Production-grade **Personal Autonomous AI Career Assistant** powered by **LangGraph multi-agent orchestration**, **FastAPI**, **Qdrant Vector RAG**, **PostgreSQL**, **Redis Worker Queues**, **Prometheus & Grafana Observability**, and **Docker Compose**.
+A multi-service **Personal Autonomous AI Career Assistant** powered by **LangGraph multi-agent orchestration**, **FastAPI**, **Qdrant Vector RAG**, **PostgreSQL**, **Redis Worker Queues**, **Prometheus & Grafana Observability**, and **Docker Compose**.
 
 ---
 
@@ -49,12 +49,12 @@ Send Instant / Daily Email Alerts (Gmail SMTP) → Update Web Control Center →
 
 ## ⚡ Quick Start with Docker Compose
 
-The entire application runs seamlessly with zero source code edits using Docker Compose.
+Docker Compose provides the application services. Review environment variables, authentication, and integration credentials before deployment.
 
 ```bash
 # 1. Clone repository
-git clone <repository_url>
-cd job_agent
+git clone https://github.com/rithin-rakesh/agentic-ai-career-assistant.git
+cd agentic-ai-career-assistant
 
 # 2. Start full stack cluster
 docker compose up -d --build
@@ -63,9 +63,7 @@ docker compose up -d --build
 open http://localhost/ (or http://SERVER_IP/)
 ```
 
-Default Web Credentials:
-- **Username**: `admin`
-- **Password**: `admin` (or `password`)
+**Security:** Never expose the dashboard publicly with default credentials. Set a strong, unique administrator password and configure secrets securely before deployment.
 
 ---
 
@@ -153,7 +151,7 @@ curl http://localhost/health
 | Issue | Cause | Resolution |
 |-------|-------|------------|
 | **Login Error 500** | Missing JWT cookie / parameter binding | Access `/login` and submit `admin` / `admin`. |
-| **Qdrant DB Lock / Error** | Parallel file access | In tests or standalone mode, `VECTOR_DB_URL` uses `:memory:`. In Docker, Qdrant runs as a standalone service on port `6373`. |
+| **Qdrant DB Lock / Error** | Parallel file access | In tests or standalone mode, `VECTOR_DB_URL` uses `:memory:`. In Docker, Qdrant typically runs as a standalone service on port `6333`. |
 | **SMTP Auth Failed (535)** | Invalid password | Use a 16-character Gmail App Password instead of regular login password. |
 | **PDF Text Extraction Empty** | Scanned PDF image | Ensure PDF contains selectable vector text. Plain text or Markdown uploads can also be used as fallbacks. |
 | **Port 80 Conflict** | Nginx or local web server | Change host port mapping in `docker-compose.yml` (e.g. `"8080:80"`). |
@@ -170,4 +168,4 @@ pytest tests/ -v
 ---
 
 ## 📄 License
-MIT License. Free for personal and commercial usage.
+See the repository's license file for applicable terms. Do not assume an open-source license unless one has been explicitly added.
